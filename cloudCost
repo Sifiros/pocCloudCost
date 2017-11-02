@@ -2,8 +2,17 @@
 
 import sys
 
-def main:
-    print("caca")
+def main():
+    try:
+        print("caca")
+    except Exception as error:
+         print("An error occured %s" % (error), file=sys.stderr)
+         return (-1)
+    except KeyboardInterrupt:
+         print ("\nSIGINT caught, interrupt program", file=sys.stderr)
+    except:
+         print ("Unknown error occured", file=sys.stderr)
+    return (0)
 
 if __name__ == "__main__":
     sys.exit(main())
