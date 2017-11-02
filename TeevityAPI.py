@@ -1,5 +1,5 @@
-from costs import costs
-from events import events
+from api.costs import costs
+from api.events import events
 
 class TeevityAPI:
 	
