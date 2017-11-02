@@ -8,9 +8,9 @@ def main:
     except Exception as error:
          print("An error occured %s" % (error), file=sys.stderr)
          return (-1)
-     except KeyboardInterrupt:
+    except KeyboardInterrupt:
          print ("\nSIGINT caught, interrupt program", file=sys.stderr)
-     except:
+    except:
          print ("Unknown error occured", file=sys.stderr)
      return (0)
 
