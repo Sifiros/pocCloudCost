@@ -10,37 +10,30 @@ class GainCalculator():
     expCycleCost = 0
     currentScope = []
 
-    def printCurrentScope():
-        currentScope = getCloudCost()
-        for x in currentScope:
+    def __init__(self):
+        self.currentScope = self.getCloudCost()
+        self.printCurrentScope()
+
+
+    def printCurrentScope(self):
+        print("test")
+        for x in self.currentScope:
             print(x)
 
-    def getEventContext();
+    def getEventContext(self):
         pass
 
-    def getCostScope():
+    def getCostScope(self):
         pass
 
-    def getCloudCost():
-        return [{
-		date: 'utc1',
-		costs: {
-			s3: '25',
-			ec2: ...
-		}
-	}, {
-		date: 'utc2',
-		costs: {
-			s3: '20',
-			ec2: ...
-		}
-	}]
+    def getCloudCost(self):
+        return  [{"costs":{"ec2":"40"},"date":"2017-12-06T09:00:00.000Z"},{"costs":{"ec2":"10"},"date":"2017-12-06T21:00:00.000Z"},{"costs":{"ec2":"40"},"date":"2017-12-07T09:00:00.000Z"},{"costs": {"ec2":"10"},"date":"2017-12-07T21:00:00.000Z"},{"costs":{"ec2":"40"},"date":"2017-12-08T09:00:00.000Z"},{"costs":{"ec2":"10"},"date":"2017-12-08T21:00:00.000Z"},{"costs":{"ec2":"40"},  "date":"2017-12-09T09:00:00.000Z"},{"costs":{"ec2":"10"},"date":"2017-12-09T21:00:00.000Z"},  {"costs":{"ec2":"40"},"date":"2017-12-10T09:00:00.000Z"},{"costs":{"ec2":"10"},"date":"2017-12-10T21:00:00.000Z"},{"costs":{"ec2":"40"},"date":"2017-12-13T09:00:00.000Z"},{"costs": {"ec2":"10"},"date":"2017-12-13T21:00:00.000Z"}]
 
-    def calcRI():
+    def calcRI(self):
         pass
 
-    def calcIOPS():
+    def calcIOPS(self):
         pass
 
-    def calcStopStart():
+    def calcStopStart(self):
         pass

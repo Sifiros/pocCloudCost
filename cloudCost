@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
 import sys
+from gainCalculator import GainCalculator
 
 def main():
     try:
-        print("caca")
+        calculator = GainCalculator()
     except Exception as error:
          print("An error occured %s" % (error), file=sys.stderr)
          return (-1)
