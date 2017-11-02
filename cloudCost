@@ -5,9 +5,14 @@ from gainCalculator import GainCalculator
 import sys
 
 def main():
+    #try:
+    calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
+    calculator.printCurrentScope()
+    print('//////////////')
+    calculator.processEvents()
+    calculator.printEventScopes()
     try:
-        calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
-        calculator.printCurrentScope()
+        pass
     except Exception as error:
          print("An error occured %s" % (error), file=sys.stderr)
          return (-1)

@@ -20,14 +20,15 @@ rl.on('line', function(costs) {
 
 function processCost(curCost, costs) {
 	console.log('#> ' + costs.length)
-	var curEvent = {date: curCost.date, events: {}}
+	var curEvent = {date: curCost.date, type: '', datas: {}}
 	askEventFor(curCost.date, curCost.costs, function (event) {
-		curEvent.events[event] = {}
+		curEvent.type = event;
+		curEvent.datas = {}
+		
 		events.push(curEvent);
 		if (i < costs.length)
 			processCost(costs[i++], costs)
 		else {
-			console.log(' ' + i + ' / ' + costs.length)
 			console.log(JSON.stringify(events))
 			rl.close();
 		}
