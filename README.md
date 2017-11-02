@@ -28,7 +28,7 @@ Available events :
 	- start_instance
 	- shutdown_instance
 	- modify_ebs_iops
-	- modify_ebs_size
+	- destroy_ebs_volume
 
 ```python
 return [{
