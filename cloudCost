@@ -2,7 +2,7 @@
 
 import sys
 
-def main:
+def main():
     try:
         print("caca")
     except Exception as error:
@@ -12,7 +12,7 @@ def main:
          print ("\nSIGINT caught, interrupt program", file=sys.stderr)
     except:
          print ("Unknown error occured", file=sys.stderr)
-     return (0)
+    return (0)
 
 if __name__ == "__main__":
     sys.exit(main())
