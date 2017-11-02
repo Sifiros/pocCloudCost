@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 
+from TeevityAPI import TeevityAPI
+from gainCalculator import GainCalculator
 import sys
 
 def main():
     try:
-        print("caca")
+        calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
+        calculator.printCurrentScope()
     except Exception as error:
          print("An error occured %s" % (error), file=sys.stderr)
          return (-1)

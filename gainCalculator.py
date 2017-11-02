@@ -4,37 +4,27 @@ import sys
 import os
 
 class GainCalculator():
+    costs = []
+    events = []
 
     currentCycleGain = 0
     lowCycleCost = 0
     expCycleCost = 0
     currentScope = []
 
-    def printCurrentScope():
-        currentScope = getCloudCost()
-        for x in currentScope:
+    def __init__(self, costs, events):
+        self.costs = costs
+        self.events = events
+
+    def printCurrentScope(self):
+        for x in self.costs:
             print(x)
 
-    def getEventContext();
+    def getEventContext():
         pass
 
     def getCostScope():
         pass
-
-    def getCloudCost():
-        return [{
-		date: 'utc1',
-		costs: {
-			s3: '25',
-			ec2: ...
-		}
-	}, {
-		date: 'utc2',
-		costs: {
-			s3: '20',
-			ec2: ...
-		}
-	}]
 
     def calcRI():
         pass
