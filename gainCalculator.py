@@ -23,14 +23,14 @@ class GainCalculator():
     def getEventContext():
         pass
 
-    def getCostScope():
+    def getCostScope(self):
         pass
 
     def calcRI():
         pass
 
-    def calcIOPS():
+    def calcIOPS(self):
         pass
 
-    def calcStopStart():
+    def calcStopStart(self):
         pass

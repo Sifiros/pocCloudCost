@@ -3,6 +3,7 @@
 from TeevityAPI import TeevityAPI
 from gainCalculator import GainCalculator
 import sys
+from gainCalculator import GainCalculator
 
 def main():
     try:
