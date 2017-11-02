@@ -19,6 +19,9 @@ class GainCalculator():
     def printCurrentScope(self):
         for x in self.costs:
             print(x)
+        print('-----------------------------------------------------------')
+        for x in self.events:
+            print(x)
 
     def getEventContext():
         pass
