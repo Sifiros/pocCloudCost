@@ -49,6 +49,9 @@ def main():
         r = requests.get(url, headers=headers)
 
 
+        # adding timout
+
+        requests.get('http://github.com', timeout=0.001)
 
 
     except Exception as e:
