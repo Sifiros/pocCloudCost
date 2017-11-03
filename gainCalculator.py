@@ -73,7 +73,7 @@ class GainCalculator():
                     for res in cost['costs']:
                         if res not in eventScope['costs']:
                             eventScope['costs'][res] = int(cost['costs'][res])
-                            nbs[res] = 1 
+                            nbs[res] = 1
                         else:
                             eventScope['costs'][res] += int(cost['costs'][res])
                             nbs[res] += 1
