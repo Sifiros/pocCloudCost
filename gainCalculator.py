@@ -13,6 +13,8 @@ class GainCalculator():
     currentCycleGain = 0
     lowCycleCost = 0
     expCycleCost = 0
+    lowAverage = 0
+    expAverage = 0
     eventScopes = []
 
     def __init__(self, costs, events):
@@ -62,10 +64,7 @@ class GainCalculator():
     def processCostInEvent(self):
 
         expCounter = 0
-        expTimeActivity = 0
         lowCounter = 0
-        expTimeActivity = 0
-
 
         for cost in self.costs:
             for event in self.eventScopes:
@@ -77,13 +76,18 @@ class GainCalculator():
                        for x in event['ressourceInfo']:
                            if event['custodianEffective'] is False:
                                self.expCycleCost += int(event['ressourceInfo'][x]) * (event['effectiveDuration'] / 60)
+                               self.expAverage +=  int(event['ressourceInfo'][x])
                                expCounter += 1
                            else:
                                self.lowCycleCost += int(event['ressourceInfo'][x]) * (event['effectiveDuration'] / 60)
+                               self.lowAverage +=  int(event['ressourceInfo'][x])
                                lowCounter += 1
+        self.expAverage = self.expAverage / expCounter
         self.expCycleCost = self.expCycleCost / expCounter
         self.lowCycleCost = self.lowCycleCost / lowCounter
+        self.lowAverage = self.lowAverage / lowCounter
         print("expPrice => {} lowPrice => {}".format(self.expCycleCost, self.lowCycleCost))
+        print("expAverage => {} lowAverage => {}".format(self.expAverage, self.lowAverage))
 
     def printEventScopes(self):
         for cur in self.eventScopes:
