@@ -33,7 +33,7 @@ class GainCalculator():
                 if curScopes['onoff'] and curScopes['onoff']['effective'] == False:
                     self.pushEventScope('onoff', curScopes['onoff'], parse(cur['date']))
                 curScopes['onoff'] = {'startDate': cur['date'], 'effective': True}
-            elif cur['type'] == 'start_instance': 
+            elif cur['type'] == 'start_instance':
                 if curScopes['onoff'] and curScopes['onoff']['effective'] is True:
                     self.pushEventScope('onoff', curScopes['onoff'], parse(cur['date']))
                 curScopes['onoff'] = {'startDate': cur['date'], 'effective': False}
@@ -60,16 +60,30 @@ class GainCalculator():
         })
 
     def processCostInEvent(self):
+
+        expCounter = 0
+        expTimeActivity = 0
+        lowCounter = 0
+        expTimeActivity = 0
+
+
         for cost in self.costs:
             for event in self.eventScopes:
                 costDate = parse(cost['date'])
                 if costDate.timestamp() > event['startDate'].timestamp() and \
                    costDate.timestamp() < event['endDate'].timestamp():
                        event['ressourceInfo'] = cost['costs']
-
-        print('//////////////')
-        for x in self.eventScopes:
-            print(x)
+                       print(event['ressourceInfo'])
+                       for x in event['ressourceInfo']:
+                           if event['custodianEffective'] is False:
+                               self.expCycleCost += int(event['ressourceInfo'][x]) * (event['effectiveDuration'] / 60)
+                               expCounter += 1
+                           else:
+                               self.lowCycleCost += int(event['ressourceInfo'][x]) * (event['effectiveDuration'] / 60)
+                               lowCounter += 1
+        self.expCycleCost = self.expCycleCost / expCounter
+        self.lowCycleCost = self.lowCycleCost / lowCounter
+        print("expPrice => {} lowPrice => {}".format(self.expCycleCost, self.lowCycleCost))
 
     def printEventScopes(self):
         for cur in self.eventScopes:
