@@ -98,8 +98,3 @@ class GainCalculator():
     def calcRI():
         pass
 
-    def calcIOPS(self):
-        pass
-
-    def calcStopStart(self):
-        pass
