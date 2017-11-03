@@ -11,6 +11,8 @@ def main():
     print('//////////////')
     calculator.processEvents()
     calculator.printEventScopes()
+
+    calculator.processCostInEvent()
     try:
         pass
     except Exception as error:

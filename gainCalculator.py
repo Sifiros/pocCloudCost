@@ -59,6 +59,18 @@ class GainCalculator():
             'custodianEffective': scope['effective']
         })
 
+    def processCostInEvent(self):
+        for cost in self.costs:
+            for event in self.eventScopes:
+                costDate = parse(cost['date'])
+                if costDate.timestamp() > event['startDate'].timestamp() and \
+                   costDate.timestamp() < event['endDate'].timestamp():
+                       event['ressourceInfo'] = cost['costs']
+
+        print('//////////////')
+        for x in self.eventScopes:
+            print(x)
+
     def printEventScopes(self):
         for cur in self.eventScopes:
             print(cur)
