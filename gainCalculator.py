@@ -49,7 +49,7 @@ class GainCalculator():
         if curScopes['onoff']:
             self.pushEventScope('onoff', curScopes['onoff'], self.endPeriodDate)
         if curScopes['iops']:
-            self.pushEventScope('iops', curScopes['iops'], parse(cur['date']))
+            self.pushEventScope('iops', curScopes['iops'], self.endPeriodDate)
 
     def pushEventScope(self, eventType, scope, dateEnd):
         scope['startDate'] = parse(scope['startDate'])
