@@ -19,10 +19,18 @@ class GainCalculator():
 
     def __init__(self, costs, events):
         self.costs = costs
+        for cost in self.costs:
+            cost['date'] = parse(cost['date'])
         self.events = events
+        for event in self.events:
+            event['date'] = parse(event['date'])
 
     def printCurrentScope(self):
+        print('----------- Events : (' + str(len(self.events)) + ')')
         for x in self.events:
+            print(x)
+        print('----------- Costs : (' + str(len(self.costs)) + ')')
+        for x in self.costs:
             print(x)
 
     def processEvents(self):
@@ -33,15 +41,15 @@ class GainCalculator():
         for cur in self.events:
             if cur['type'] == 'shutdown_instance': # associer events aux instanceid
                 if curScopes['onoff'] and curScopes['onoff']['effective'] == False:
-                    self.pushEventScope('onoff', curScopes['onoff'], parse(cur['date']))
+                    self.pushEventScope('onoff', curScopes['onoff'], cur['date'])
                 curScopes['onoff'] = {'startDate': cur['date'], 'effective': True}
             elif cur['type'] == 'start_instance':
                 if curScopes['onoff'] and curScopes['onoff']['effective'] is True:
-                    self.pushEventScope('onoff', curScopes['onoff'], parse(cur['date']))
+                    self.pushEventScope('onoff', curScopes['onoff'], cur['date'])
                 curScopes['onoff'] = {'startDate': cur['date'], 'effective': False}
             elif cur['type'] == 'modify_ebs_iops':
                 if curScopes['iops']:
-                    self.pushEventScope('iops', curScopes['iops'], parse(cur['date']))
+                    self.pushEventScope('iops', curScopes['iops'], cur['date'])
                 curScopes['iops'] = {'startDate': cur['date'], 'effective': True}
             elif cur['type'] == 'destroy_ebs_volume':
                 self.pushEventScope('destroy_ebs', {'startDate': cur['date'], 'effective': True}, self.endPeriodDate)
@@ -52,7 +60,6 @@ class GainCalculator():
             self.pushEventScope('iops', curScopes['iops'], self.endPeriodDate)
 
     def pushEventScope(self, eventType, scope, dateEnd):
-        scope['startDate'] = parse(scope['startDate'])
         self.eventScopes.append({
             'type': eventType,
             'startDate': scope['startDate'],
@@ -67,9 +74,8 @@ class GainCalculator():
             nbs = {}
 
             for cost in self.costs:
-                costDate = parse(cost['date'])
-                if costDate.timestamp() > eventScope['startDate'].timestamp() and \
-                   costDate.timestamp() < eventScope['endDate'].timestamp(): # costdate included in cur event scope : getting costs
+                if cost['date'].timestamp() > eventScope['startDate'].timestamp() and \
+                   cost['date'].timestamp() < eventScope['endDate'].timestamp(): # costdate included in cur event scope : getting costs
                     for res in cost['costs']:
                         if res not in eventScope['costs']:
                             eventScope['costs'][res] = int(cost['costs'][res])
@@ -85,7 +91,43 @@ class GainCalculator():
                 eventScope['totalCosts'] += eventScope['costs'][cur]
 
 
+    def analyzePeriod(self, date1, date2):
+        periodCosts = []
+
+        for cost in self.costs:
+            if cost['date'].timestamp() >= date1.timestamp() and \
+               cost['date'].timestamp() <= date2.timestamp():
+                cost['matchingEventTypes'] = self.getMatchingEventTypes(cost['date'], cost['costs'])
+                periodCosts.append(cost)
+
+        return periodCosts
+
+
+    def getMatchingEventTypes(self, date, resources):
+        eventTypes = {};
+        found = False
+        for event in self.eventScopes:
+            if date.timestamp() >= event['startDate'].timestamp() and \
+               date.timestamp() <= event['endDate'].timestamp() and event['custodianEffective']:
+               for res_hit in event['costs']:
+                    if res_hit in resources:
+                        found = True
+                        eventTypes[event['type']] = True
+        return eventTypes if found else False
+
+    def printPeriodStats(self, period):
+        print('----- Period analyze results : ')
+        nbAffectedCosts = 0
+        for curCost in period:
+            print(curCost)
+            if curCost['matchingEventTypes']:
+                nbAffectedCosts += 1
+        print('')
+        percentage = round(((nbAffectedCosts / len(period)) * 100), 2)
+        print(str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events ')
+
     def printEventScopes(self):
+        print('----------- Events scopes : ')
         for cur in self.eventScopes:
             print(cur)
 
