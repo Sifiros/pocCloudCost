@@ -20,10 +20,10 @@ rl.on('line', function(costs) {
 
 function processCost(curCost, costs) {
 	console.log('#> ' + costs.length)
-	var curEvent = {date: curCost.date, type: '', datas: {}}
+	var curEvent = {date: curCost.date, type: '', affectedResources: {}}
 	askEventFor(curCost.date, curCost.costs, function (event) {
 		curEvent.type = event;
-		curEvent.datas = {}
+		curEvent.affectedResources = {}
 		
 		events.push(curEvent);
 		if (i < costs.length)

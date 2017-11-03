@@ -42,17 +42,17 @@ class GainCalculator():
             if cur['type'] == 'shutdown_instance': # associer events aux instanceid
                 if curScopes['onoff'] and curScopes['onoff']['effective'] == False:
                     self.pushEventScope('onoff', curScopes['onoff'], cur['date'])
-                curScopes['onoff'] = {'startDate': cur['date'], 'effective': True}
+                curScopes['onoff'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}
             elif cur['type'] == 'start_instance':
                 if curScopes['onoff'] and curScopes['onoff']['effective'] is True:
                     self.pushEventScope('onoff', curScopes['onoff'], cur['date'])
-                curScopes['onoff'] = {'startDate': cur['date'], 'effective': False}
+                curScopes['onoff'] = {'startDate': cur['date'], 'effective': False, 'affectedResources': cur['affectedResources']}
             elif cur['type'] == 'modify_ebs_iops':
                 if curScopes['iops']:
                     self.pushEventScope('iops', curScopes['iops'], cur['date'])
-                curScopes['iops'] = {'startDate': cur['date'], 'effective': True}
+                curScopes['iops'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}
             elif cur['type'] == 'destroy_ebs_volume':
-                self.pushEventScope('destroy_ebs', {'startDate': cur['date'], 'effective': True}, self.endPeriodDate)
+                self.pushEventScope('destroy_ebs', {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}, self.endPeriodDate)
 
         if curScopes['onoff']:
             self.pushEventScope('onoff', curScopes['onoff'], self.endPeriodDate)
@@ -65,7 +65,8 @@ class GainCalculator():
             'startDate': scope['startDate'],
             'endDate': dateEnd,
             'effectiveDuration': ((dateEnd.timestamp() - scope['startDate'].timestamp()) / 60),
-            'custodianEffective': scope['effective']
+            'custodianEffective': scope['effective'],
+            'affectedResources': scope['affectedResources']
         })
 
     def processCostInEvent(self):
@@ -106,13 +107,13 @@ class GainCalculator():
     def getMatchingEventTypes(self, date, resources):
         eventTypes = {};
         found = False
-        for event in self.eventScopes:
-            if date.timestamp() >= event['startDate'].timestamp() and \
-               date.timestamp() <= event['endDate'].timestamp() and event['custodianEffective']:
-               for res_hit in event['costs']:
+        for eventScope in self.eventScopes:
+            if date.timestamp() >= eventScope['startDate'].timestamp() and \
+               date.timestamp() <= eventScope['endDate'].timestamp() and eventScope['custodianEffective']:
+               for res_hit in eventScope['affectedResources']:
                     if res_hit in resources:
                         found = True
-                        eventTypes[event['type']] = True
+                        eventTypes[eventScope['type']] = True
         return eventTypes if found else False
 
     def printPeriodStats(self, period):
