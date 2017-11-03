@@ -62,32 +62,28 @@ class GainCalculator():
         })
 
     def processCostInEvent(self):
+        for eventScope in self.eventScopes: # calculating average costs for each event scope
+            eventScope['costs'] = {}
+            nbs = {}
 
-        expCounter = 0
-        lowCounter = 0
-
-        for cost in self.costs:
-            for event in self.eventScopes:
+            for cost in self.costs:
                 costDate = parse(cost['date'])
-                if costDate.timestamp() > event['startDate'].timestamp() and \
-                   costDate.timestamp() < event['endDate'].timestamp():
-                       event['ressourceInfo'] = cost['costs']
-                       print(event['ressourceInfo'])
-                       for x in event['ressourceInfo']:
-                           if event['custodianEffective'] is False:
-                               self.expCycleCost += int(event['ressourceInfo'][x]) * (event['effectiveDuration'] / 60)
-                               self.expAverage +=  int(event['ressourceInfo'][x])
-                               expCounter += 1
-                           else:
-                               self.lowCycleCost += int(event['ressourceInfo'][x]) * (event['effectiveDuration'] / 60)
-                               self.lowAverage +=  int(event['ressourceInfo'][x])
-                               lowCounter += 1
-        self.expAverage = self.expAverage / expCounter
-        self.expCycleCost = self.expCycleCost / expCounter
-        self.lowCycleCost = self.lowCycleCost / lowCounter
-        self.lowAverage = self.lowAverage / lowCounter
-        print("expPrice => {} lowPrice => {}".format(self.expCycleCost, self.lowCycleCost))
-        print("expAverage => {} lowAverage => {}".format(self.expAverage, self.lowAverage))
+                if costDate.timestamp() > eventScope['startDate'].timestamp() and \
+                   costDate.timestamp() < eventScope['endDate'].timestamp(): # costdate included in cur event scope : getting costs
+                    for res in cost['costs']:
+                        if res not in eventScope['costs']:
+                            eventScope['costs'][res] = int(cost['costs'][res])
+                            nbs[res] = 1 
+                        else:
+                            eventScope['costs'][res] += int(cost['costs'][res])
+                            nbs[res] += 1
+
+            # averages
+            eventScope['totalCosts'] = 0
+            for cur in eventScope['costs']:
+                eventScope['costs'][cur] /= nbs[cur]
+                eventScope['totalCosts'] += eventScope['costs'][cur]
+
 
     def printEventScopes(self):
         for cur in self.eventScopes:

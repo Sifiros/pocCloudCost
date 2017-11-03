@@ -10,9 +10,9 @@ def main():
     calculator.printCurrentScope()
     print('//////////////')
     calculator.processEvents()
-    calculator.printEventScopes()
 
     calculator.processCostInEvent()
+    calculator.printEventScopes()
     try:
         pass
     except Exception as error:
