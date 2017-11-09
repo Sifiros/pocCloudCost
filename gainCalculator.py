@@ -123,6 +123,11 @@ class GainCalculator():
         affectedCosts = {}
         nbBasic = {}
         basicCosts = {}
+        currentRealCost = 0
+        unoptimizedTheoricalCost = 0
+        lowCost = 0
+        upCost = 0
+        upCount = 0
 
         nbAffectedCosts = 0
         for curCost in period:
@@ -130,9 +135,16 @@ class GainCalculator():
             if curCost['matchingEventTypes']:
                 nbAffectedCosts += 1
 
-            for resource in curCost['costs'] : 
+            for resource in curCost['costs'] :
                 nbs = nbAffected if curCost['matchingEventTypes'] != False else nbBasic
                 costSums = affectedCosts if curCost['matchingEventTypes'] != False else basicCosts
+                currentRealCost += int(curCost['costs'][resource])
+                if curCost['matchingEventTypes'] != False:
+                    lowCost = int(curCost['costs'][resource])
+                else:
+                    upCost = int(curCost['costs'][resource])
+                    upCount += 1
+
 
                 curCost['costs'][resource] = int(curCost['costs'][resource])
                 costSums[resource] = (curCost['costs'][resource] + costSums[resource]) if resource in costSums else curCost['costs'][resource]
@@ -142,6 +154,13 @@ class GainCalculator():
         percentage = round(((nbAffectedCosts / len(period)) * 100), 2)
         print(str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events ')
         print('')
+
+        print("up => {}, low => {}, upCount => {}".format(upCost, lowCost, upCount))
+        unoptimizedTheoricalCost = ((upCost - lowCost) * upCount) + currentRealCost
+        print('You have paid {} with optimization'.format(currentRealCost))
+        print('You would have paid {} without'.format(unoptimizedTheoricalCost))
+        print('That represent {} of economy on this period'.format(currentRealCost - unoptimizedTheoricalCost))
+
         for res in nbAffected:
             affectedCosts[res] = round((affectedCosts[res] / int(nbAffected[res])), 2)
             print('Average cost/h for ' + res + ' during event periods : ' + str(affectedCosts[res]))
