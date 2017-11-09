@@ -78,11 +78,12 @@ class GainCalculator():
                 if cost['date'].timestamp() > eventScope['startDate'].timestamp() and \
                    cost['date'].timestamp() < eventScope['endDate'].timestamp(): # costdate included in cur event scope : getting costs
                     for res in cost['costs']:
+                        cost['costs'][res] = int(cost['costs'][res])
                         if res not in eventScope['costs']:
-                            eventScope['costs'][res] = int(cost['costs'][res])
+                            eventScope['costs'][res] = cost['costs'][res]
                             nbs[res] = 1
                         else:
-                            eventScope['costs'][res] += int(cost['costs'][res])
+                            eventScope['costs'][res] += cost['costs'][res]
                             nbs[res] += 1
 
             # averages
@@ -118,14 +119,37 @@ class GainCalculator():
 
     def printPeriodStats(self, period):
         print('----- Period analyze results : ')
+        nbAffected = {}
+        affectedCosts = {}
+        nbBasic = {}
+        basicCosts = {}
+
         nbAffectedCosts = 0
         for curCost in period:
             print(curCost)
             if curCost['matchingEventTypes']:
                 nbAffectedCosts += 1
+
+            for resource in curCost['costs'] : 
+                nbs = nbAffected if curCost['matchingEventTypes'] != False else nbBasic
+                costSums = affectedCosts if curCost['matchingEventTypes'] != False else basicCosts
+
+                curCost['costs'][resource] = int(curCost['costs'][resource])
+                costSums[resource] = (curCost['costs'][resource] + costSums[resource]) if resource in costSums else curCost['costs'][resource]
+                nbs[resource] = (nbs[resource] + 1 ) if resource in nbs else 1
+
         print('')
         percentage = round(((nbAffectedCosts / len(period)) * 100), 2)
         print(str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events ')
+        print('')
+        for res in nbAffected:
+            affectedCosts[res] = round((affectedCosts[res] / int(nbAffected[res])), 2)
+            print('Average cost/h for ' + res + ' during event periods : ' + str(affectedCosts[res]))
+        print('')
+        for res in nbBasic:
+            basicCosts[res] = round((basicCosts[res] / int(nbBasic[res])), 2)
+            print('Average cost/h for ' + res + ' during non-event periods : ' + str(basicCosts[res]))
+        print('')
 
     def printEventScopes(self):
         print('----------- Events scopes : ')
