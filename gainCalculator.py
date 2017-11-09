@@ -155,11 +155,7 @@ class GainCalculator():
         print(str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events ')
         print('')
 
-        print("up => {}, low => {}, upCount => {}".format(upCost, lowCost, upCount))
         unoptimizedTheoricalCost = ((upCost - lowCost) * upCount) + currentRealCost
-        print('You have paid {} with optimization'.format(currentRealCost))
-        print('You would have paid {} without'.format(unoptimizedTheoricalCost))
-        print('That represent {} of economy on this period'.format(currentRealCost - unoptimizedTheoricalCost))
 
         for res in nbAffected:
             affectedCosts[res] = round((affectedCosts[res] / int(nbAffected[res])), 2)
@@ -169,6 +165,11 @@ class GainCalculator():
             basicCosts[res] = round((basicCosts[res] / int(nbBasic[res])), 2)
             print('Average cost/h for ' + res + ' during non-event periods : ' + str(basicCosts[res]))
         print('')
+        print('You have paid {} with optimization'.format(currentRealCost))
+        print('You would have paid {} without'.format(unoptimizedTheoricalCost))
+        print('That represent {} of economy on this period'.
+                format(unoptimizedTheoricalCost - currentRealCost))
+
 
     def printEventScopes(self):
         print('----------- Events scopes : ')
