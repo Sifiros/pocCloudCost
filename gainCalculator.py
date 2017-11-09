@@ -151,7 +151,7 @@ class GainCalculator():
                 nbs[resource] = (nbs[resource] + 1 ) if resource in nbs else 1
 
         print('')
-        percentage = round(((nbAffectedCosts / len(period)) * 100), 2)
+        percentage = round(((nbAffectedCosts / len(period)) * 100), 2) if len(period) != 0 else 0
         print(str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events ')
         print('')
 
