@@ -142,7 +142,6 @@ class GainCalculator():
                         if (list(elem.keys())[:1])[0] != rsc:
                             glob.append({rsc: {
                                 'prices' : [],
-                                'nonEventCost':0
                                 }})
                             break
 
@@ -153,11 +152,11 @@ class GainCalculator():
                     if rsc == list(elem.keys())[:1][0]:
                         elem[rsc]['prices'].append({
                             'date' : x['date'].isoformat(),
-                            'price' : x['costs'][rsc]
+                            'price' : x['costs'][rsc],
+                            'matchingEventTypes' : x['matchingEventTypes']
                             })
                         if x['matchingEventTypes'] == False:
                            elem[rsc]['nonEventCost'] = int(x['costs'][rsc])
-
 
         # write object to file
         fileToWrite = open('./data.json', 'w')
