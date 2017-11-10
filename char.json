@@ -1,0 +1,23 @@
+{
+    "EC2 Resources": {
+        "prices": [{
+                "date": "mescouilles",
+                "price": "mabite"
+            },
+            {
+              "date": "mescouilles",
+                "price": "mabite"            }
+        ],
+        "nonEventCost": 40
+    },
+
+   "EBS Resources": {
+        "prices": [{
+              "date": "mescouilles",
+                "price": "mabite"            },
+            {
+              "date": "mescouilles",
+                "price": "mabite"            }
+        ],
+        "nonEventCost": 62
+    }

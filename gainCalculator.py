@@ -25,6 +25,7 @@ class GainCalculator():
         for event in self.events:
             event['date'] = parse(event['date'])
 
+
     def printCurrentScope(self):
         print('----------- Events : (' + str(len(self.events)) + ')')
         for x in self.events:
@@ -124,6 +125,46 @@ class GainCalculator():
                         eventTypes[eventScope['type']] = True
         return eventTypes if found else False
 
+    def printPeriodJson(self, period):
+        print('----------------------------- period JJJSSSOOONN --------------------------')
+        glob = []
+        graphJson = {}
+
+        # list base creation
+        for x in period:
+            for rsc in x['costs']:
+                if len(glob) == 0:
+                    glob.append({rsc: {
+                        'prices' : [],
+                        'nonEventCost':0
+                        }})
+                else:
+                    for elem in glob:
+                        if (list(elem.keys())[:1])[0] != rsc:
+                            glob.append({rsc: {
+                                'prices' : [],
+                                'nonEventCost':0
+                                }})
+                            break
+
+        # list filling
+        for elem in glob:
+            for x in period:
+                for rsc in x['costs']:
+                    if rsc == list(elem.keys())[:1][0]:
+                        elem[rsc]['prices'].append({
+                            'date' : x['date'].isoformat(),
+                            'price' : x['costs'][rsc]
+                            })
+                        if x['matchingEventTypes'] == False:
+                           elem[rsc]['nonEventCost'] = int(x['costs'][rsc])
+
+
+
+        for x in glob:
+            print(x)
+        print('-------------------------------------------------------------------')
+
     def printPeriodStats(self, period):
         print('----- Period analyze results : ')
         nbAffected = {}
@@ -135,6 +176,8 @@ class GainCalculator():
         lowCost = 0
         upCost = 0
         upCount = 0
+        # JSON GRAPH Intelligence
+        self.printPeriodJson(period);
 
         nbAffectedCosts = 0
         for curCost in period:
@@ -161,6 +204,7 @@ class GainCalculator():
         percentage = round(((nbAffectedCosts / len(period)) * 100), 2) if len(period) != 0 else 0
         print(str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events ')
         print('')
+        print("current date ===========> {}\n".format(curCost['date'].isoformat()))
 
         unoptimizedTheoricalCost = ((upCost - lowCost) * upCount) + currentRealCost
 
