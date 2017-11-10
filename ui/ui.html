@@ -1,0 +1,73 @@
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.1/moment.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.1/locale/fr.js"></script>
+<script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+<script type="text/javascript" src="./savingChart.js"></script>
+
+<style>
+    canvas {
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+    }
+</style>
+<h1>Test</h1>
+<div style="width:75%;">
+    <canvas id="teevityChart"></canvas>
+</div>
+<center>
+    <button onClick="window.chart.toggleDataset('EC2')">EC2</button>
+    <button onClick="window.chart.toggleDataset('EBS')">EBS</button>
+    <button onClick="window.chart.toggleDataset('Mock')">Mock</button> <br />
+    <button onClick="window.addMockDataset()">Dernier dataset</button>    
+</center>
+
+<script>
+    window.onload = function() {
+        window.chart = new TeevityChart('teevityChart', 'Teevity Savings', [
+            {label: 'EC2', data: []},
+            {label: 'EBS'},
+            {label: 'S3'},
+        ])
+
+        window.chart.setDatasetPrices('EC2', [
+            {date: '2017-08-09T13:00:00.000Z', price: '20'},
+            {date: '2017-08-09T15:00:00.000Z', price: '40'},
+            {date: '2017-08-09T17:00:00.000Z', price: '10'},
+            {date: '2017-08-09T19:00:00.000Z', price: '30'},
+            {date: '2017-08-09T19:30:00.000Z', price: '20'},
+            {date: '2017-08-09T20:00:00.000Z', price: '20'},
+        ]);
+
+        window.chart.setDatasetPrices('EBS', [
+            {date: '2017-08-09T13:00:00.000Z', price: '5'},
+            {date: '2017-08-09T15:00:00.000Z', price: '8'},
+            {date: '2017-08-09T17:00:00.000Z', price: '15'},
+            {date: '2017-08-09T19:00:00.000Z', price: '20'},
+            {date: '2017-08-09T19:30:00.000Z', price: '40'},
+            {date: '2017-08-09T20:00:00.000Z', price: '15'},
+        ]);
+        window.chart.refresh()
+
+
+        window.addMockDataset = function() {
+            window.chart.addNewDataset({
+                label: 'Mock',
+                borderColor: 'grey',
+                backgroundColor: 'black'
+            })
+            window.chart.setDatasetPrices('Mock', [
+                {date: '2017-08-08T09:00:00.000Z', price: '20'},
+                {date: '2017-08-08T13:00:00.000Z', price: '30'},
+                {date: '2017-08-08T17:00:00.000Z', price: '15'},
+                {date: '2017-08-09T05:00:00.000Z', price: '22'},
+                {date: '2017-08-09T12:30:00.000Z', price: '31'},
+                {date: '2017-08-09T19:00:00.000Z', price: '27'},
+            ]);
+            window.chart.refresh();
+        }
+    };
+</script>
