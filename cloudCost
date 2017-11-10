@@ -19,6 +19,13 @@ def main():
     calculator.printPeriodStats(period)
     calculator.printPeriodJson(period)
 
+    print('------------------ Savings by events : ')
+    savings = calculator.eventSavingsForPeriod(period)
+    for eventType in savings:
+        print(eventType + ' has savings : ')
+        for saving in savings[eventType]:
+            print(saving)
+
     try:
         pass
     except Exception as error:

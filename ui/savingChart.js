@@ -40,7 +40,6 @@ function TeevityChart(blockId, title, datasets) {
 			else
 				this.disabledDatasets.push(datasetLabel);
 		}
-		console.log('#> disabled :'  + this.disabledDatasets)
 
 		this.chart.destroy();
 		this.config = prepareChartConfig(title, this.datasets, this.disabledDatasets, this.lines)

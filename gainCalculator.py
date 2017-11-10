@@ -26,6 +26,13 @@ class GainCalculator():
         for event in self.events:
             event['date'] = parse(event['date'])
 
+    def createEventsDict(self, islist):
+        return ({
+            'onoff': [] if islist else None,
+            'iops': [] if islist else None,
+            'reserved_instance': [] if islist else None,
+            'destroy_ebs_volume': [] if islist else None
+        })
 
     def printCurrentScope(self):
         print('----------- Events : (' + str(len(self.events)) + ')')
@@ -36,11 +43,7 @@ class GainCalculator():
             print(x)
 
     def processEvents(self):
-        curScopes = {
-            'onoff': None,
-            'iops': None,
-            'reserved_instance': None
-        }
+        curScopes = self.createEventsDict(False)
         for cur in self.events:
             if cur['type'] == 'shutdown_instance': # associer events aux instanceid
                 if curScopes['onoff'] and curScopes['onoff']['effective'] == False:
@@ -101,10 +104,48 @@ class GainCalculator():
                 eventScope['costs'][cur] /= nbs[cur]
                 eventScope['totalCosts'] += eventScope['costs'][cur]
 
+    def mergeResourceCosts(self, period):
+        for cur in period:
+            tot = 0
+            for resourceCost in cur['costs']:
+                tot += cur['costs'][resourceCost]
+            cur['costs'] = tot
+        return period
+
+    def getUnoptimizedCosts(self, period):
+        lastUnoptimized = 0
+        byDates = {}
+        for cur in period:
+            if cur['matchingEventTypes'] == False:
+                lastUnoptimized = cur
+                unoptimized = cur['costs']
+            else:
+                unoptimized = lastUnoptimized['costs']
+            byDates[cur['date']] = unoptimized
+        return byDates
+
+    def eventSavingsForPeriod(self, period):
+        period = self.mergeResourceCosts(list(period))
+        unoptimizedCosts = self.getUnoptimizedCosts(period)
+        events = self.createEventsDict(True)
+        for metric in period:
+            for cur in events:
+                hasEvent = metric['matchingEventTypes'] and (cur in metric['matchingEventTypes'])
+                newSaving = {'saving': 0, 'date': metric['date'].isoformat()}
+
+                if hasEvent == False:
+                    events[cur].append(newSaving)
+                else:
+                    newSaving['saving'] = unoptimizedCosts[metric['date']] - metric['costs']
+                    events[cur].append(newSaving)
+
+        fileToWrite = open('./eventSavings.json', 'w')
+        fileToWrite.write(json.dumps(events))
+        return events
+
      #return an object filled with resources used between date1 and date3
     def analyzePeriod(self, date1, date2):
         periodCosts = []
-
         for cost in self.costs:
             if cost['date'].timestamp() >= date1.timestamp() and \
                cost['date'].timestamp() <= date2.timestamp():
@@ -163,7 +204,7 @@ class GainCalculator():
         fileToWrite.write(json.dumps(glob))
 
     def printPeriodStats(self, period):
-        print('----- Period analyze results : ')
+        print('----- Period analyze results : (' + str(len(period)) + ')')
         nbAffected = {}
         affectedCosts = {}
         nbBasic = {}

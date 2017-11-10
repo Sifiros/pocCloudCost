@@ -51,12 +51,8 @@
 
         for (var dataset of datasets) {
             var bt = document.createElement('button')
-            const label = new String(dataset.label)
-            console.log(' cur ' + label)
-            bt.onclick = function() {
-                console.log('clic on ' + label)
-                window.chart.toggleDataset(label)
-            }
+            const label = dataset.label
+            bt.onclick = function() { window.chart.toggleDataset(label) }
             bt.appendChild(document.createTextNode(dataset.label))
             document.getElementById('toggles').appendChild(bt)
         }
