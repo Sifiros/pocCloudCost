@@ -7,8 +7,7 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
 <script type="text/javascript" src="./savingChart.js"></script>
 <script type="text/javascript" src="./horizontalLineChartPlugin.js"></script>
-<script type="text/javascript" src="./data.json"></script>
-
+<script type="text/javascript" src="./eventSavings.json"></script>
 <style>
     canvas {
         -moz-user-select: none;
@@ -20,69 +19,28 @@
 <div style="width:75%;">
     <canvas id="teevityChart"></canvas>
 </div>
-<center id="toggles">
-</center>
 
 <script>
-        window.addMockDataset = function() {
-            window.chart.addNewDataset({
-                label: 'Mock',
-                borderColor: 'grey',
-                backgroundColor: 'blue'
-            })
-            window.chart.setDatasetPrices('Mock', [
-                {date: '2017-08-08T09:00:00.000Z', price: '20'},
-                {date: '2017-08-08T13:00:00.000Z', price: '30'},
-                {date: '2017-08-08T17:00:00.000Z', price: '15'},
-                {date: '2017-08-09T05:00:00.000Z', price: '22'},
-                {date: '2017-08-09T12:30:00.000Z', price: '31'},
-                {date: '2017-08-09T19:00:00.000Z', price: '27'},
-            ]);
-            window.chart.refresh();
-        }
 
     window.onload = function() {
         registerPlugin('teevityChart');
-        var metrics = datas
-        var datasets = metricsToDatasets(metrics)
+        var datasets = Object.keys(datas.events).map(function(eventName) {
+            return metricsToDataset(eventName, datas.events[eventName])
+        })
+        datasets.push(metricsToDataset('Total costs', datas.costs))
         window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
         // window.addMockDataset();
         window.chart.refresh();
 
-        for (var dataset of datasets) {
-            var bt = document.createElement('button')
-            const label = dataset.label
-            bt.onclick = function() { window.chart.toggleDataset(label) }
-            bt.appendChild(document.createTextNode(dataset.label))
-            document.getElementById('toggles').appendChild(bt)
-        }
-
-        function metricsToDatasets(resources) {
-            var datasets = []
-            for (res in resources) {
-                datasets.push({
-                    label: res,
-                    data: resources[res].prices,
+        function metricsToDataset(datasetName, resources) {
+                return ({
+                    label: datasetName,
+                    data: resources.map(function(cur) {
+                        cur.value = (typeof cur.saving != 'undefined' ? cur.saving : cur.costs);
+                        return cur;
+                    }),
                     fill: true
                 });
-
-                var lastUnoptimized = {};
-                datasets.push({
-                    label: ('Unoptimized ' + res),
-                    data: resources[res].prices.map(function(cur) {
-                        cur = Object.assign({}, cur)
-                        if (!cur.matchingEventTypes)
-                            lastUnoptimized = cur
-                        else
-                            cur.price = lastUnoptimized.price
-                        return cur
-                    }),
-                    backgroundColor: 'transparent'
-                    // fill: '-1'
-                });
-            }
-
-            return datasets
         }
 
     }

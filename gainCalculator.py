@@ -116,6 +116,7 @@ class GainCalculator():
         lastUnoptimized = 0
         byDates = {}
         for cur in period:
+            cur['date'] = cur['date'].isoformat()
             if cur['matchingEventTypes'] == False:
                 lastUnoptimized = cur
                 unoptimized = cur['costs']
@@ -131,7 +132,7 @@ class GainCalculator():
         for metric in period:
             for cur in events:
                 hasEvent = metric['matchingEventTypes'] and (cur in metric['matchingEventTypes'])
-                newSaving = {'saving': 0, 'date': metric['date'].isoformat()}
+                newSaving = {'saving': 0, 'date': metric['date']}
 
                 if hasEvent == False:
                     events[cur].append(newSaving)
@@ -139,8 +140,12 @@ class GainCalculator():
                     newSaving['saving'] = unoptimizedCosts[metric['date']] - metric['costs']
                     events[cur].append(newSaving)
 
+
         fileToWrite = open('./eventSavings.json', 'w')
-        fileToWrite.write(json.dumps(events))
+        fileToWrite.write(json.dumps({
+            'events': events,
+            'costs': period
+        }))
         return events
 
      #return an object filled with resources used between date1 and date3

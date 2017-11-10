@@ -76,22 +76,15 @@ function prepareDatasets(datasetConfig) {
 		const borderColor = dataset.borderColor || randomColor(0.4)
 		const backgroundColor = dataset.backgroundColor || randomColor(0.6)
 
-		if (!dataset.text) {
-			datasets.push({
-				label: dataset.label,
-				borderColor: borderColor,
-				backgroundColor: backgroundColor,
-				data: (dataset.data ? dataset.data.map(mapMetricToData) : []),
-				fill: typeof dataset.fill != 'undefined'  ? dataset.fill : false
-			});
-		} else if (dataset.price && dataset.text) {
-			lines.push({
-				y: dataset.price,
-				text: dataset.text,
-				style: randomColor(0.8)
-			})
-		}
+		datasets.push({
+			label: dataset.label,
+			borderColor: borderColor,
+			backgroundColor: backgroundColor,
+			data: (dataset.data ? dataset.data.map(mapMetricToData) : []),
+			fill: typeof dataset.fill != 'undefined'  ? dataset.fill : false
+		});
 	}
+
 	return ({
 		datasets: datasets,
 		lines: lines
@@ -101,7 +94,7 @@ function prepareDatasets(datasetConfig) {
 function mapMetricToData(metric) {
 	return ({
 		x: moment(metric.date).toDate(),
-		y: metric.price
+		y: metric.value
 	})
 }
 
@@ -135,8 +128,8 @@ function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = [], lines
 					display: true,
 					scaleLabel: {
 						display: true,
-						labelString: 'Pricing',
-					},
+						labelString: 'Saving',
+					}, ticks: {max: 45}
 					// stacked: true
 				}]
 			},
