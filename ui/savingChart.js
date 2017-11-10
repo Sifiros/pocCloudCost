@@ -1,24 +1,22 @@
 function TeevityChart(blockId, title, datasets) {
 	this.disabledDatasets = []
-	this.datasets = prepareDatasets(datasets)
+	var conf = prepareDatasets(datasets);
+	this.datasets = conf.datasets
+	this.lines = conf.lines
 	this.config = prepareChartConfig(title, this.datasets)
 	this.chart = initChart(blockId, this.config)
 
 	this.addNewDataset = function(dataset) {
 		if (!Array.isArray(dataset))
 			dataset = [dataset]
-		dataset = prepareDatasets(dataset);
-		Array.prototype.push.apply(this.datasets, dataset);
+		var conf = prepareDatasets(datasets);
+		Array.prototype.push.apply(this.datasets, conf.datasets);
+		Array.prototype.push.apply(this.lines, conf.lines);
 		this.toggleDataset()
 	}
 
 	this.setDatasetPrices = function(datasetLabel, prices) {
-		this.addMetric(prices.map(function(cur) {
-			return ({
-				x: moment(cur.date).toDate(),
-				y: cur.price
-			})
-		}), datasetLabel);
+		this.addMetric(prices.map(mapMetricToData), datasetLabel);
 	}
 
 	this.addMetric = function(metric, datasetLabel) {
@@ -44,7 +42,7 @@ function TeevityChart(blockId, title, datasets) {
 		}
 
 		this.chart.destroy();
-		this.config = prepareChartConfig(title, this.datasets, this.disabledDatasets)
+		this.config = prepareChartConfig(title, this.datasets, this.disabledDatasets, this.lines)
 		this.chart = initChart(blockId, this.config);
 		this.refresh();
 	}
@@ -73,24 +71,47 @@ function prepareDatasets(datasetConfig) {
         return 'rgba(' + randomColorFactor() + ',' + randomColorFactor() + ',' + randomColorFactor() + ',' + (opacity || '.3') + ')';
     }
 	var datasets = [];
+	var lines = [];
 	for (dataset of datasetConfig) {
 		const borderColor = dataset.borderColor || randomColor(0.4)
 		const backgroundColor = dataset.backgroundColor || randomColor(0.6)
-		datasets.push({
-			label: dataset.label,
-			borderColor: borderColor,
-			backgroundColor: backgroundColor,
-			data: dataset.data || [],
-			fill: false
-		});
+
+		if (dataset.data) {
+			dataset.data = dataset.data.map(mapMetricToData)
+			datasets.push({
+				label: dataset.label,
+				borderColor: borderColor,
+				backgroundColor: backgroundColor,
+				data: dataset.data || [],
+				fill: true
+			});
+		} else if (dataset.price && dataset.text) {
+			lines.push({
+				y: dataset.price,
+				text: dataset.text,
+				style: randomColor(0.8)
+			})
+		}
 	}
-	return (datasets)
+	return ({
+		datasets: datasets,
+		lines: lines
+	})
 }
 
-function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = []) {
+function mapMetricToData(metric) {
+	return ({
+		x: moment(metric.date).toDate(),
+		y: metric.price
+	})
+}
+
+function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = [], lines = []) {
 	var datasets = allDatasets.filter(function(cur) {
 		return !excludeDatasets.includes(cur.label)
 	});
+
+	console.log('#> displa lines ' + JSON.stringify(lines))
 
 	return ({
 		type: 'line',
@@ -116,10 +137,12 @@ function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = []) {
 					display: true,
 					scaleLabel: {
 						display: true,
-						labelString: 'Pricing'
-					}
+						labelString: 'Pricing',
+					},
+					// stacked: true
 				}]
-			}
+			},
+		    "horizontalLine": lines
 		}
 	})
 }
