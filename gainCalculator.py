@@ -2,6 +2,7 @@
 
 import sys
 import os
+import json
 from dateutil.parser import *
 from datetime import *
 
@@ -126,9 +127,7 @@ class GainCalculator():
         return eventTypes if found else False
 
     def printPeriodJson(self, period):
-        print('----------------------------- period JJJSSSOOONN --------------------------')
         glob = []
-        graphJson = {}
 
         # list base creation
         for x in period:
@@ -160,10 +159,9 @@ class GainCalculator():
                            elem[rsc]['nonEventCost'] = int(x['costs'][rsc])
 
 
-
-        for x in glob:
-            print(x)
-        print('-------------------------------------------------------------------')
+        # write object to file
+        fileToWrite = open('./data.json', 'w')
+        fileToWrite.write(json.dumps(glob))
 
     def printPeriodStats(self, period):
         print('----- Period analyze results : ')
