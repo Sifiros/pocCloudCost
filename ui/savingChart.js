@@ -9,7 +9,7 @@ function TeevityChart(blockId, title, datasets) {
 	this.addNewDataset = function(dataset) {
 		if (!Array.isArray(dataset))
 			dataset = [dataset]
-		var conf = prepareDatasets(datasets);
+		var conf = prepareDatasets(dataset);
 		Array.prototype.push.apply(this.datasets, conf.datasets);
 		Array.prototype.push.apply(this.lines, conf.lines);
 		this.toggleDataset()
@@ -40,6 +40,7 @@ function TeevityChart(blockId, title, datasets) {
 			else
 				this.disabledDatasets.push(datasetLabel);
 		}
+		console.log('#> disabled :'  + this.disabledDatasets)
 
 		this.chart.destroy();
 		this.config = prepareChartConfig(title, this.datasets, this.disabledDatasets, this.lines)
@@ -76,14 +77,13 @@ function prepareDatasets(datasetConfig) {
 		const borderColor = dataset.borderColor || randomColor(0.4)
 		const backgroundColor = dataset.backgroundColor || randomColor(0.6)
 
-		if (dataset.data) {
-			dataset.data = dataset.data.map(mapMetricToData)
+		if (!dataset.text) {
 			datasets.push({
 				label: dataset.label,
 				borderColor: borderColor,
 				backgroundColor: backgroundColor,
-				data: dataset.data || [],
-				fill: true
+				data: (dataset.data ? dataset.data.map(mapMetricToData) : []),
+				fill: typeof dataset.fill != 'undefined'  ? dataset.fill : false
 			});
 		} else if (dataset.price && dataset.text) {
 			lines.push({
@@ -108,11 +108,10 @@ function mapMetricToData(metric) {
 
 function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = [], lines = []) {
 	var datasets = allDatasets.filter(function(cur) {
-		return !excludeDatasets.includes(cur.label)
+		return !excludeDatasets.some(function(exc) {
+			return exc == cur.label
+		})
 	});
-
-	console.log('#> displa lines ' + JSON.stringify(lines))
-
 	return ({
 		type: 'line',
 		data: {

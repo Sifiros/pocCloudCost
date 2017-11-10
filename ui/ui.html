@@ -20,44 +20,15 @@
 <div style="width:75%;">
     <canvas id="teevityChart"></canvas>
 </div>
-<center>
-    <button onClick="window.chart.toggleDataset('EC2')">EC2</button>
-    <button onClick="window.chart.toggleDataset('EBS')">EBS</button>
-    <button onClick="window.chart.toggleDataset('Mock')">Mock</button> <br />
-    <button onClick="window.addMockDataset()">Dernier dataset</button>    
+<center id="toggles">
 </center>
 
 <script>
-    window.onload = function() {
-        registerPlugin('teevityChart');
-        var metrics = datas
-        console.log('#> metrics =  ' + JSON.stringify(metrics))
-        var datasets = metricsToDatasets(metrics)
-        console.log('#> datasets = ' + JSON.stringify(datasets))
-        window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
-        window.chart.refresh();
-
-        function metricsToDatasets(resources) {
-            var datasets = []
-            for (res in resources) {
-                datasets.push({
-                    label: res,
-                    data: resources[res].prices
-                });
-                datasets.push({
-                    text: 'optimized ' + res,
-                    price: resources[res].nonEventCost
-                });
-            }
-
-            return datasets
-        }
-
         window.addMockDataset = function() {
             window.chart.addNewDataset({
                 label: 'Mock',
                 borderColor: 'grey',
-                backgroundColor: 'black'
+                backgroundColor: 'blue'
             })
             window.chart.setDatasetPrices('Mock', [
                 {date: '2017-08-08T09:00:00.000Z', price: '20'},
@@ -70,5 +41,53 @@
             window.chart.refresh();
         }
 
-    };
+    window.onload = function() {
+        registerPlugin('teevityChart');
+        var metrics = datas
+        var datasets = metricsToDatasets(metrics)
+        window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
+        // window.addMockDataset();
+        window.chart.refresh();
+
+        for (var dataset of datasets) {
+            var bt = document.createElement('button')
+            const label = new String(dataset.label)
+            console.log(' cur ' + label)
+            bt.onclick = function() {
+                console.log('clic on ' + label)
+                window.chart.toggleDataset(label)
+            }
+            bt.appendChild(document.createTextNode(dataset.label))
+            document.getElementById('toggles').appendChild(bt)
+        }
+
+        function metricsToDatasets(resources) {
+            var datasets = []
+            for (res in resources) {
+                datasets.push({
+                    label: res,
+                    data: resources[res].prices,
+                    fill: true
+                });
+
+                var lastUnoptimized = {};
+                datasets.push({
+                    label: ('Unoptimized ' + res),
+                    data: resources[res].prices.map(function(cur) {
+                        cur = Object.assign({}, cur)
+                        if (!cur.matchingEventTypes)
+                            lastUnoptimized = cur
+                        else
+                            cur.price = lastUnoptimized.price
+                        return cur
+                    }),
+                    backgroundColor: 'transparent'
+                    // fill: '-1'
+                });
+            }
+
+            return datasets
+        }
+
+    }
 </script>
