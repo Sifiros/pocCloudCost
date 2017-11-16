@@ -44,8 +44,8 @@ angular.module('app')
         console.log('generate with ' + JSON.stringify($scope.form))
         var form = {...$scope.form}
         form.reductionRI /= 100.0
-        form.reductionWeekOnOff = ((form.reductionWeekOnOff - 100.0) / 100.0)
-        form.reductionWeekEndOnOff = ((form.reductionWeekEndOnOff - 100.0) / 100.0)
+        form.reductionWeekOnOff = ((100.0 - form.reductionWeekOnOff ) / 100.0)
+        form.reductionWeekEndOnOff = ((100.0 - form.reductionWeekEndOnOff) / 100.0)
 
         var stats = generate(form)
         console.log('COSTS '  + JSON.stringify(stats))
@@ -99,7 +99,7 @@ function generate(form) {
                     addEvent(cur, 'start_instance')
                     curCost = riAppliedCost
                     onOffStatus = true
-                } else if (onOffStatus) { // En semaine et hors journée : faut éteindre
+                } else if (onOffStatus && !cur.isBetween(curStartDate, curShutdownDate)) { // En semaine et hors journée : faut éteindre
                     addEvent(cur, 'shutdown_instance')
                     curCost *= form.reductionWeekOnOff
                     onOffStatus = false

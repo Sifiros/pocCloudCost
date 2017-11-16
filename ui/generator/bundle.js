@@ -55,8 +55,8 @@ _angular2.default.module('app').controller('MyCtrl', function ($scope, $rootScop
         console.log('generate with ' + (0, _stringify2.default)($scope.form));
         var form = (0, _extends3.default)({}, $scope.form);
         form.reductionRI /= 100.0;
-        form.reductionWeekOnOff = (form.reductionWeekOnOff - 100.0) / 100.0;
-        form.reductionWeekEndOnOff = (form.reductionWeekEndOnOff - 100.0) / 100.0;
+        form.reductionWeekOnOff = (100.0 - form.reductionWeekOnOff) / 100.0;
+        form.reductionWeekEndOnOff = (100.0 - form.reductionWeekEndOnOff) / 100.0;
 
         var stats = generate(form);
         console.log('COSTS ' + (0, _stringify2.default)(stats));
@@ -112,7 +112,7 @@ function generate(form) {
                     addEvent(cur, 'start_instance');
                     curCost = riAppliedCost;
                     onOffStatus = true;
-                } else if (onOffStatus) {
+                } else if (onOffStatus && !cur.isBetween(curStartDate, curShutdownDate)) {
                     // En semaine et hors journée : faut éteindre
                     addEvent(cur, 'shutdown_instance');
                     curCost *= form.reductionWeekOnOff;
