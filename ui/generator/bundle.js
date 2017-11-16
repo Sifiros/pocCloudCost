@@ -55,8 +55,8 @@ _angular2.default.module('app').controller('MyCtrl', function ($scope, $rootScop
         console.log('generate with ' + (0, _stringify2.default)($scope.form));
         var form = (0, _extends3.default)({}, $scope.form);
         form.reductionRI /= 100.0;
-        form.reductionWeekOnOff = (100.0 - form.reductionWeekOnOff) / 100.0;
-        form.reductionWeekEndOnOff = (100.0 - form.reductionWeekEndOnOff) / 100.0;
+        form.reductionWeekOnOff = form.reductionWeekOnOff / 100.0;
+        form.reductionWeekEndOnOff = form.reductionWeekEndOnOff / 100.0;
 
         var stats = generate(form);
         console.log('COSTS ' + (0, _stringify2.default)(stats));
@@ -80,13 +80,15 @@ function generate(form) {
     var riApplied = false;
     var riAppliedCost = curCost;
     var onOffStatus = true;
+    var savings = {
+        onoff: 0
+    };
 
     var cur = moment(form.startDate);
     var endDate = moment(cur).add(form.duration, 'days');
     while (!cur.isSame(endDate)) {
         if (form.dateRI && cur.isSameOrAfter(form.dateRI) && !riApplied) {
             riApplied = true;
-            console.log('Application RI le ' + cur.format('DD MMMM YYYY') + ' : prix ' + curCost + ' -> ' + curCost * form.reductionRI);
             curCost = riAppliedCost = curCost * form.reductionRI;
             addEvent(cur, 'reserved_instance');
         }
@@ -100,29 +102,35 @@ function generate(form) {
                 if (onOffStatus) {
                     // En weekend alors que c'est On : on éteint
                     addEvent(cur, 'shutdown_instance');
-                    curCost *= form.reductionWeekEndOnOff;
+                    // curCost *= form.reductionWeekEndOnOff
                     onOffStatus = false;
-                    console.log('week end le ' + cur.format('DD MMMM YYYY H:mm') + ' : prix = ' + curCost + " ( " + form.reductionWeekEndOnOff + " )");
                 }
+                savings.onoff = curCost * form.reductionWeekEndOnOff;
             } else {
                 var curStartDate = moment(cur).hour(form.timeOnWeek);
-                if (!onOffStatus && cur.isBetween(curStartDate, curShutdownDate)) {
+                if (cur.isBetween(curStartDate, curShutdownDate)) {
                     // En semaine et en journée : doit etre allumé
-                    console.log(cur.format('DD MMMM YYYY H:mm') + ' est entre ' + curStartDate.format('DD MMMM YYYY H:mm') + ' // ' + curShutdownDate.format('DD MMMM YYYY H:mm'));
-                    addEvent(cur, 'start_instance');
-                    curCost = riAppliedCost;
-                    onOffStatus = true;
-                } else if (onOffStatus && !cur.isBetween(curStartDate, curShutdownDate)) {
+                    if (!onOffStatus) {
+                        addEvent(cur, 'start_instance');
+                        onOffStatus = true;
+                    }
+                    // curCost = riAppliedCost
+                    savings.onoff = 0;
+                } else if (!cur.isBetween(curStartDate, curShutdownDate)) {
                     // En semaine et hors journée : faut éteindre
-                    addEvent(cur, 'shutdown_instance');
-                    curCost *= form.reductionWeekOnOff;
-                    onOffStatus = false;
+                    if (onOffStatus) {
+                        addEvent(cur, 'shutdown_instance');
+                        onOffStatus = false;
+                    }
+                    // curCost *= form.reductionWeekOnOff
+                    savings.onoff = curCost * form.reductionWeekOnOff;
                 }
             }
+            if (cur.isSame('2017-11-16T01:00:00.000Z')) console.log('RI result : ' + savings.onoff + ' // onoff ' + onOffStatus + ' // between ' + cur.isBetween(curStartDate, curShutdownDate));
         }
 
         costs.push({
-            costs: { ec2: curCost },
+            costs: { ec2: curCost - savings.onoff },
             date: cur.toISOString()
         });
 
