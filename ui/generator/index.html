@@ -1,0 +1,68 @@
+<body ng-app="app" ng-controller="MyCtrl">
+<meta charset="UTF-9" />
+<script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	crossorigin="anonymous"></script>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+ <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.2/moment.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.2/locale/fr.js"></script>
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.css" />
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/js/bootstrap-datepicker.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/locales/bootstrap-datepicker.fr.min.js"></script>
+
+<script src="./bundle.js"></script>
+
+<form method="post" ng-submit="onValid()">
+Periode : <input type="text" class="form-control" id="period" style="display: inline-block; width: 200px;"> <br />
+Prix: <input type="number" ng-model="form.startCost" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
+Durée : <input type="number" ng-model="form.duration" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br /> <br /> <br />
+
+
+<h4>RI</h4>
+Date de début : <input type="text" class="form-control" id="dateRI" style="display: inline-block; width: 200px;"> <br />
+Réduction (pourcentage) : <input type="number" ng-model="form.reductionRI" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br /> <br /> <br />
+
+
+<h4>On / Off</h4>
+Date de début : <input type="text" class="form-control" id="dateOnOff" style="display: inline-block; width: 200px;"> <br />
+Réduction semaine (pourcentage) : <input type="number" ng-model="form.reductionWeekOnOff" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
+Réduction week-end (pourcentage) : <input type="number" ng-model="form.reductionWeekEndOnOff" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
+Heure de ON en semaine : <input type="number" ng-model="form.timeOnWeek" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
+Heure de OFF en semaine : <input type="number" ng-model="form.timeOffWeek" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
+
+<br /><br /> <br />
+<button type='submit' class='btn btn-primary'>Générer</button>
+</form>
+
+
+<style type="text/css">
+pre {
+    font-family: "Courier 10 Pitch", Courier, monospace;
+    font-size: 95%;
+    line-height: 140%;
+    white-space: pre;
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: -o-pre-wrap;
+    background: #faf8f0;
+}       
+
+#json code {
+    display: block;
+    border: 1px solid #bebab0;
+}	
+</style>
+<div id="json">
+<pre>
+	{{form.costJson}}
+</pre>
+</div>
+
+<div id="json">
+<pre>
+	{{form.eventJson}}
+</pre>
+</div>
+
+</body>
+
