@@ -1,0 +1,37 @@
+#!/usr/bin/python3
+
+from TeevityAPI import TeevityAPI
+from gainCalculator2 import GainCalculator
+from dateutil.parser import *
+from datetime import *
+import sys
+
+def printEventTypeFromSavings(savings):
+    for eventType in savings:
+        print(eventType + ' has savings : ')
+        for saving in savings[eventType]:
+            print(saving)
+
+
+def main():
+    # try:
+    calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
+    calculator.printCurrentScope()
+
+    calculator.processEvents()
+    calculator.printEventScopes()
+    savings = calculator.getSavings()
+    print('------------------ Savings by events : ')
+    printEventTypeFromSavings(savings)
+
+    # except Exception as error:
+    #      print("An error occured %s" % (error), file=sys.stderr)
+    #      return (-1)
+    # except KeyboardInterrupt:
+    #      print ("\nSIGINT caught, interrupt program", file=sys.stderr)
+    # except:
+    #      print ("Unknown error occured", file=sys.stderr)
+    return (0)
+
+if __name__ == "__main__":
+    sys.exit(main())
