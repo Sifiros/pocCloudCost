@@ -22,6 +22,8 @@ class GainCalculator():
         self.costs = costs
         for cost in self.costs:
             cost['date'] = parse(cost['date'])
+            if cost['date'].timestamp() > self.endPeriodDate.timestamp():
+                self.endPeriodDate = cost['date']
         self.events = events
         for event in self.events:
             event['date'] = parse(event['date'])
@@ -245,7 +247,7 @@ class GainCalculator():
         print('')
         percentage = round(((nbAffectedCosts / len(period)) * 100), 2) if len(period) != 0 else 0
         print(str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events \n')
-        print("current date ===========> {}\n".format(curCost['date'].isoformat()))
+        # print("current date ===========> {}\n".format(curCost['date'].isoformat()))
 
         unoptimizedTheoricalCost = ((upCost - lowCost) * upCount) + currentRealCost
 
