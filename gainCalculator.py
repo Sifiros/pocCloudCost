@@ -18,6 +18,8 @@ class GainCalculator():
     expAverage = 0
     eventScopes = []
 
+
+    # Constructor
     def __init__(self, costs, events):
         self.costs = costs
         for cost in self.costs:
@@ -28,6 +30,7 @@ class GainCalculator():
         for event in self.events:
             event['date'] = parse(event['date'])
 
+
     def createEventsDict(self, islist):
         return ({
             'onoff': [] if islist else None,
@@ -36,13 +39,6 @@ class GainCalculator():
             'destroy_ebs_volume': [] if islist else None
         })
 
-    def printCurrentScope(self):
-        print('----------- Events : (' + str(len(self.events)) + ')')
-        for x in self.events:
-            print(x)
-        print('----------- Costs : (' + str(len(self.costs)) + ')')
-        # for x in self.costs:
-        #     print(x)
 
     def processEvents(self):
         curScopes = self.createEventsDict(False)
@@ -106,6 +102,7 @@ class GainCalculator():
                 eventScope['costs'][cur] /= nbs[cur]
                 eventScope['totalCosts'] += eventScope['costs'][cur]
 
+
     def mergeResourceCosts(self, period):
         for cur in period:
             tot = 0
@@ -113,6 +110,7 @@ class GainCalculator():
                 tot += cur['costs'][resourceCost]
             cur['costs'] = tot
         return period
+
 
     def getUnoptimizedCosts(self, period):
         lastUnoptimized = 0
@@ -126,6 +124,7 @@ class GainCalculator():
                 unoptimized = lastUnoptimized['costs']
             byDates[cur['date']] = unoptimized
         return byDates
+
 
     def eventSavingsForPeriod(self, period):
         period = self.mergeResourceCosts(list(period))
@@ -150,7 +149,8 @@ class GainCalculator():
         }))
         return events
 
-     #return an object filled with resources used between date1 and date3
+
+    #return an object filled with resources used between date1 and date3
     def analyzePeriod(self, date1, date2):
         periodCosts = []
         for cost in self.costs:
@@ -174,6 +174,8 @@ class GainCalculator():
                         eventTypes[eventScope['type']] = True
         return eventTypes if found else False
 
+
+    # JSON GRAPH Intelligence
     def printPeriodJson(self, period):
         glob = []
 
@@ -210,6 +212,7 @@ class GainCalculator():
         fileToWrite = open('./data.json', 'w')
         fileToWrite.write(json.dumps(glob))
 
+
     def printPeriodStats(self, period):
         print('----- Period analyze results : (' + str(len(period)) + ')')
         nbAffected = {}
@@ -221,7 +224,6 @@ class GainCalculator():
         lowCost = 0
         upCost = 0
         upCount = 0
-        # JSON GRAPH Intelligence
 
         nbAffectedCosts = 0
         for curCost in period:
@@ -244,10 +246,8 @@ class GainCalculator():
                 costSums[resource] = (curCost['costs'][resource] + costSums[resource]) if resource in costSums else curCost['costs'][resource]
                 nbs[resource] = (nbs[resource] + 1 ) if resource in nbs else 1
 
-        print('')
         percentage = round(((nbAffectedCosts / len(period)) * 100), 2) if len(period) != 0 else 0
-        print(str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events \n')
-        # print("current date ===========> {}\n".format(curCost['date'].isoformat()))
+        print("\n" + str(nbAffectedCosts) + ' / ' + str(len(period)) + ' (' + str(percentage) + '%) cost metrics have been affected by events \n')
 
         unoptimizedTheoricalCost = ((upCost - lowCost) * upCount) + currentRealCost
 
@@ -259,22 +259,24 @@ class GainCalculator():
             print('Average cost/h for ' + res + ' during non-event periods : ' + str(basicCosts[res]) + '\n')
         print('You have paid {} with optimization'.format(currentRealCost))
         print('You would have paid {} without'.format(unoptimizedTheoricalCost))
-        print('That represent {} of economy on this period'.
-                format(unoptimizedTheoricalCost - currentRealCost))
+        print('That represent {} of economy on this period'.format(unoptimizedTheoricalCost - currentRealCost))
 
+    #
+    # Debug Print Functions
+    #
+
+    def printCurrentScope(self):
+        print('----------- Events : (' + str(len(self.events)) + ')')
+        for x in self.events:
+            print(x)
+        print()
+        print('----------- Costs : (' + str(len(self.costs)) + ')')
+        for x in self.costs:
+            print(x)
+        print()
 
     def printEventScopes(self):
         print('----------- Events scopes : ')
         for cur in self.eventScopes:
             print(cur)
         print('')
-
-    def getEventContext():
-        pass
-
-    def getCostScope(self):
-        pass
-
-    def calcRI():
-        pass
-

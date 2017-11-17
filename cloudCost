@@ -6,28 +6,30 @@ from dateutil.parser import *
 from datetime import *
 import sys
 
+def printEventTypeFromSavings(savings):
+    for eventType in savings:
+        print(eventType + ' has savings : ')
+        for saving in savings[eventType]:
+            print(saving)
+
+
 def main():
-    #try:
-    calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
-    calculator.printCurrentScope()
-
-    calculator.processEvents()
-    calculator.processCostInEvent()
-    calculator.printEventScopes()
-
-    period = calculator.analyzePeriod(True, True)#(parse('2017-08-07T09:00:00.000Z'), parse('2017-08-15T09:00:00.000Z'))
-    calculator.printPeriodStats(period)
-    calculator.printPeriodJson(period)
-
-    print('------------------ Savings by events : ')
-    savings = calculator.eventSavingsForPeriod(period)
-    # for eventType in savings:
-    #     print(eventType + ' has savings : ')
-    #     for saving in savings[eventType]:
-    #         print(saving)
-
     try:
-        pass
+        calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
+        calculator.printCurrentScope()
+
+        calculator.processEvents()
+        calculator.processCostInEvent()
+        calculator.printEventScopes()
+
+        period = calculator.analyzePeriod(True, True)#(parse('2017-08-07T09:00:00.000Z'), parse('2017-08-15T09:00:00.000Z'))
+        calculator.printPeriodStats(period)
+        calculator.printPeriodJson(period)
+
+        print('------------------ Savings by events : ')
+        savings = calculator.eventSavingsForPeriod(period)
+        #printEventTypeFromSavings(savings)
+
     except Exception as error:
          print("An error occured %s" % (error), file=sys.stderr)
          return (-1)
