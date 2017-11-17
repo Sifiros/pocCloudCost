@@ -8,3 +8,5 @@ Axes de solution:
 
         Faire des associations de ressources dans le cas d'un coût partagé
         -> probleme : j'vois pas comment le faire et faut retaper tout le code
+
+        Calculer dans le python la réduction associé à l'event de maniere indépendante
