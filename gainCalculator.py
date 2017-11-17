@@ -154,8 +154,8 @@ class GainCalculator():
     def analyzePeriod(self, date1, date2):
         periodCosts = []
         for cost in self.costs:
-            if cost['date'].timestamp() >= date1.timestamp() and \
-               cost['date'].timestamp() <= date2.timestamp():
+            if (date1 == True or cost['date'].timestamp() >= date1.timestamp()) and \
+               (date2 == True or cost['date'].timestamp() <= date2.timestamp()):
                 cost['matchingEventTypes'] = self.getMatchingEventTypes(cost['date'], cost['costs'])
                 periodCosts.append(cost)
 

@@ -15,7 +15,7 @@ def main():
     calculator.processCostInEvent()
     calculator.printEventScopes()
 
-    period = calculator.analyzePeriod(parse('2017-08-07T09:00:00.000Z'), parse('2017-08-15T09:00:00.000Z'))
+    period = calculator.analyzePeriod(True, True)#(parse('2017-08-07T09:00:00.000Z'), parse('2017-08-15T09:00:00.000Z'))
     calculator.printPeriodStats(period)
     calculator.printPeriodJson(period)
 
