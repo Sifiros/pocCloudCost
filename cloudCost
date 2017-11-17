@@ -21,10 +21,10 @@ def main():
 
     print('------------------ Savings by events : ')
     savings = calculator.eventSavingsForPeriod(period)
-    for eventType in savings:
-        print(eventType + ' has savings : ')
-        for saving in savings[eventType]:
-            print(saving)
+    # for eventType in savings:
+    #     print(eventType + ' has savings : ')
+    #     for saving in savings[eventType]:
+    #         print(saving)
 
     try:
         pass

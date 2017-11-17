@@ -129,7 +129,7 @@ function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = [], lines
 					scaleLabel: {
 						display: true,
 						labelString: 'Saving',
-					}, ticks: {max: 45}
+					}//, ticks: {max: 45}
 					// stacked: true
 				}]
 			},

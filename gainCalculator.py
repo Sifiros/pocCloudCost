@@ -41,8 +41,8 @@ class GainCalculator():
         for x in self.events:
             print(x)
         print('----------- Costs : (' + str(len(self.costs)) + ')')
-        for x in self.costs:
-            print(x)
+        # for x in self.costs:
+        #     print(x)
 
     def processEvents(self):
         curScopes = self.createEventsDict(False)
