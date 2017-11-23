@@ -141,12 +141,16 @@ class GainCalculator():
                     newSaving['saving'] = unoptimizedCosts[metric['date']] - metric['costs']
                     events[cur].append(newSaving)
 
+        with open('./eventSavings.json', 'w') as fileToWrite:
+            fileToWrite.write('datas = ')
+        fileToWrite.close()
+        with open ('./eventSavings.json', 'a+') as fileToEdit:
+            fileToEdit.write(json.dumps({
+                    'events': events,
+                    'costs': period
+                }))
+        fileToEdit.close()
 
-        fileToWrite = open('./ui/eventSavings.json', 'w')
-        fileToWrite.write(json.dumps({
-            'events': events,
-            'costs': period
-        }))
         return events
 
 
@@ -208,13 +212,13 @@ class GainCalculator():
                         if x['matchingEventTypes'] == False:
                            elem[rsc]['nonEventCost'] = int(x['costs'][rsc])
 
-        # write object to file
-        with open('./eventSavings.json', 'w') as fileToWrite:
-            fileToWrite.write('datas = ')
-        fileToWrite.close()
-        with open ('./eventSavings.json', 'a+') as fileToEdit:
-            fileToEdit.write(json.dumps(glob))
-        fileToEdit.close()
+       # write object to file
+       # with open('./eventSavings.json', 'w') as fileToWrite:
+       #     fileToWrite.write('datas = ')
+       # fileToWrite.close()
+       # with open ('./eventSavings.json', 'a+') as fileToEdit:
+       #     fileToEdit.write(json.dumps(glob))
+       # fileToEdit.close()
 
 
     def printPeriodStats(self, period):
