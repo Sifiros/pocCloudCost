@@ -142,7 +142,7 @@ class GainCalculator():
                     events[cur].append(newSaving)
 
 
-        fileToWrite = open('./eventSavings.json', 'w')
+        fileToWrite = open('./ui/eventSavings.json', 'w')
         fileToWrite.write(json.dumps({
             'events': events,
             'costs': period
@@ -209,8 +209,12 @@ class GainCalculator():
                            elem[rsc]['nonEventCost'] = int(x['costs'][rsc])
 
         # write object to file
-        fileToWrite = open('./data.json', 'w')
-        fileToWrite.write(json.dumps(glob))
+        with open('./eventSavings.json', 'w') as fileToWrite:
+            fileToWrite.write('datas = ')
+        fileToWrite.close()
+        with open ('./eventSavings.json', 'a+') as fileToEdit:
+            fileToEdit.write(json.dumps(glob))
+        fileToEdit.close()
 
 
     def printPeriodStats(self, period):
