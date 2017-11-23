@@ -83,18 +83,19 @@ class GainCalculator():
             cur['costs'] = tot
         return period
 
-    # Permet de trier une liste  d'event scope par priorité
+    # Permet de trier une liste  d'event scope par date
+    # Tri par priorité mit en commentaire, le partage de bénéfice se fait actuellement dans l'ordre d'apparition des events
     def getEventScopePriority(self, scope):
         return scope['startDate'].timestamp()
-        priorities = ({
-            "reserved_instance": 1,
-            "onoff": 10,
-            "iops": 10,
-            "destroy_ebs_volume": 10
-        })
-        if (scope['type']) not in priorities:
-            return 10
-        return priorities[(scope['type'])]
+        # priorities = ({
+        #     "reserved_instance": 1,
+        #     "onoff": 10,
+        #     "iops": 10,
+        #     "destroy_ebs_volume": 10
+        # })
+        # if (scope['type']) not in priorities:
+        #     return 10
+        # return priorities[(scope['type'])]
 
     # Récupère les event scope matchant date
     def getMatchingEventTypes(self, date):
@@ -116,7 +117,6 @@ class GainCalculator():
         lastUnoptimized = 0
         byDates = {}
         for cur in period:
-            # cur['date'] = cur['date'].isoformat()
             cur['matchingEventTypes'] = self.getMatchingEventTypes(cur['date'])
             if cur['matchingEventTypes'] == False:
                 lastUnoptimized = cur
@@ -127,7 +127,7 @@ class GainCalculator():
         return byDates
 
 
-
+    # useless atm, censé pouvoir définir le bénéfice d'un nouveau scope défini comme prioritaire à d'autres (ayant déjà leur bénéfice)
     def balanceSavingPercents(self, scopes, targetScope, costs, unoptimized, totalSaving):
         targetPassed = False
         wholeSaving = (float(totalSaving) / unoptimized)
@@ -148,7 +148,6 @@ class GainCalculator():
     # Renvoie chaque event ses metrics de savings pour chaque date ayant un cost
     # Nécessite l'appel préalable de processEvents (création des eventscopes)
     # TODO: -> event scope on off doit sarreter en fin de week
-    #       -> event / costs décalés d'une heure matin / soir
     def getSavings(self):
         costs = list(self.costs)
         costs = self.mergeResourceCosts(list(costs))
@@ -160,34 +159,36 @@ class GainCalculator():
 
             if metric['matchingEventTypes'] != False: # Cout actuel compris dans au moins un scope
                 totalSaving = unoptimizedCosts[curDate] - metric['costs']
-                # print(" at " + str(metric["date"]) + " : saving =  " + str(totalSaving) + " divided into " + str(metric["matchingEventTypes"]))
-                idx = 0
                 for curScope in metric['matchingEventTypes']:
                     if 'saving' not in curScope: 
-                        # print("at " + str(idx) + " / " + str(len(metric['matchingEventTypes'])) + " / " + str(metric['date']) + " : " + curScope['type'] + " || totalSaving = " + str(totalSaving) + " || curCost = " + str(metric['costs']))
                         self.balanceSavingPercents(metric['matchingEventTypes'], curScope, metric['costs'], unoptimizedCosts[curDate], totalSaving)
-                        # curScope['saving'] = float(float(totalSaving) / unoptimizedCosts[curDate])
-                        # print("SAVING PERCENTS = " + str(curScope["saving"]) + " (currently equals to " + str((unoptimizedCosts[curDate] * curScope['saving'])) + " saving)")
-                    idx += 1
+
                     curSaving = (unoptimizedCosts[curDate] * curScope['saving'])
                     if (totalSaving - curSaving) < 0:
                         curSaving = totalSaving
                     totalSaving = totalSaving - curSaving
-                    # print("at " + str(metric['date']) + " REMAINS " + str(totalSaving) + " SAVINGS / " + curScope["type"] + " SAVES " + str(curSaving) + " // cost : " +  str(metric['costs']) + " / unoptimized : " + str(unoptimizedCosts[curDate]))
+                    
                     events[curScope['type']].append({
                         'saving': curSaving,
-                        'date': curDate
+                        'date': curDate.isoformat()
                     })
                     eventsApplied.append(curScope['type'])
-            # for curEvent in events:
-            #     if curEvent not in eventsApplied:
-            #         events[curEvent].append({'saving': 0, 'date': curDate})
-        # fileToWrite = open('./eventSavings.json', 'w')
-        # fileToWrite.write(json.dumps({
-        #     'events': events,
-        #     'costs': costs
-        # }))
+            for curEvent in events:
+                if curEvent not in eventsApplied:
+                    events[curEvent].append({'saving': 0, 'date': curDate.isoformat()})
+        self.storeToFile(events, costs)
         return events
+
+
+    def storeToFile(self, events, costs):
+        for cost in costs:
+            cost['matchingEventTypes'] = None
+            cost['date'] = cost['date'].isoformat()
+        fileToWrite = open('./ui/eventSavings.json', 'w')
+        fileToWrite.write(json.dumps({
+            'events': events,
+            'costs': costs
+        }))
 
     #
     # Debug Print Functions
