@@ -14,29 +14,23 @@ def printEventTypeFromSavings(savings):
 
 
 def main():
-    try:
-        calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
-        calculator.printCurrentScope()
+    # try:
+    calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
+    calculator.printCurrentScope()
 
-        calculator.processEvents()
-        calculator.processCostInEvent()
-        calculator.printEventScopes()
+    calculator.processEvents()
+    calculator.printEventScopes()
+    savings = calculator.getSavings()
+    print('------------------ Savings by events : ')
+    printEventTypeFromSavings(savings)
 
-        period = calculator.analyzePeriod(True, True)#(parse('2017-08-07T09:00:00.000Z'), parse('2017-08-15T09:00:00.000Z'))
-        calculator.printPeriodStats(period)
-        calculator.printPeriodJson(period)
-
-        print('------------------ Savings by events : ')
-        savings = calculator.eventSavingsForPeriod(period)
-        #printEventTypeFromSavings(savings)
-
-    except Exception as error:
-         print("An error occured %s" % (error), file=sys.stderr)
-         return (-1)
-    except KeyboardInterrupt:
-         print ("\nSIGINT caught, interrupt program", file=sys.stderr)
-    except:
-         print ("Unknown error occured", file=sys.stderr)
+    # except Exception as error:
+    #      print("An error occured %s" % (error), file=sys.stderr)
+    #      return (-1)
+    # except KeyboardInterrupt:
+    #      print ("\nSIGINT caught, interrupt program", file=sys.stderr)
+    # except:
+    #      print ("Unknown error occured", file=sys.stderr)
     return (0)
 
 if __name__ == "__main__":
