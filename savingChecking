@@ -89,9 +89,11 @@ def lookForInconsistencies(dates):
 			nbErrors += 1
 
 	if nbErrors == 0:
-		print("PASSED\tNo cost metric have saving without linked event.")
-		print("PASSED\tEvery sum of real cost with saving is equal to corresponding unoptimized cost.")
+		print("PASSED:\tNo cost metric have saving without linked event.")
+		print("PASSED:\tEvery sum of real cost with saving is equal to corresponding unoptimized cost.")
 		print("> No inconsistency found !")
+	else:
+		print("\n\nFAILURE:\t%d (against %d metrics) inconsistencies found." % (nbErrors, len(dates)))
 
 def main():
 	datas = json.loads(sys.stdin.read())
