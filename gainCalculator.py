@@ -161,7 +161,7 @@ class GainCalculator():
                 totalSaving = unoptimizedCosts[curDate] - metric['costs']
                 for curScope in metric['matchingEventTypes']:
                     if 'saving' not in curScope:
-                        self.balanceSavingPercents(metric['matchingEventTypes'], curScope, metric['costs'], unoptimizedCosts[curDate], totalSaving)
+                        self.balanceSavingPercents(metric['matchingEventTypes'], curScope, metric['costs'], unoptimizedCosts[curDate], totalSaving) # ça du coup ca c'est useless
 
                     curSaving = (unoptimizedCosts[curDate] * curScope['saving'])
                     if (totalSaving - curSaving) < 0:
@@ -188,7 +188,7 @@ class GainCalculator():
         with open('./ui/eventSavings.json', 'w') as fileToWrite:
             fileToWrite.write('datas = ')
         fileToWrite.close()
-        with open ('./ui/eventSavings.json', 'a+') as fileToEdit:
+        with open('./ui/eventSavings.json', 'a+') as fileToEdit:
             fileToEdit.write(json.dumps({
                 'events': events,
                 'costs': costs

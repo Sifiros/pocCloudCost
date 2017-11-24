@@ -1,5 +1,5 @@
 import angular from 'angular';
-                
+
 const app = angular.module('app', []);
 
 angular.module('app')
@@ -52,6 +52,19 @@ angular.module('app')
         $scope.form.costJson = JSON.stringify(stats.costs)
         $scope.form.eventJson = JSON.stringify(stats.events)
     }
+
+		$scope.downloadObjectAsJson = function (exportObj, exportName){
+		  console.log("entering download");
+		  if (exportObj && exportName) {
+		    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+		    var downloadAnchorNode = document.createElement('a');
+		    downloadAnchorNode.setAttribute("href",     dataStr);
+		    downloadAnchorNode.setAttribute("download", exportName + ".json");
+		    downloadAnchorNode.click();
+		    downloadAnchorNode.remove();
+		  }
+		}
+
 });
 
 function generate(form) {
@@ -108,7 +121,7 @@ function generate(form) {
                     savings.onoff = (curCost * form.reductionWeekOnOff)
                 }
             }
-        }    
+        }
 
         costs.push({
             costs: {ec2: (curCost - savings.onoff)},

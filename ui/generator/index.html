@@ -45,13 +45,17 @@ pre {
     white-space: -moz-pre-wrap;
     white-space: -o-pre-wrap;
     background: #faf8f0;
-}       
+}
 
 #json code {
     display: block;
     border: 1px solid #bebab0;
-}	
+}
 </style>
+
+<br />
+<button ng-click="downloadObjectAsJson(form.costJson, 'cost')">Télécharger costs</button>
+<button ng-click="downloadObjectAsJson(form.eventJson, 'events')">Télécharger events</button>
 <div id="json">
 <pre>
 	{{form.costJson}}
@@ -65,4 +69,3 @@ pre {
 </div>
 
 </body>
-
