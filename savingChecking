@@ -1,0 +1,125 @@
+#!/usr/bin/python3
+
+##
+## Sum up saving results, look for inconsistencies
+## Needs "./cloudCost --json" as input (run ./cloudCost --json | ./savingChecking)
+##
+
+from TeevityAPI import TeevityAPI
+import json
+from dateutil.parser import *
+import sys
+
+def getPeriod(costs):
+	period = {
+		"start": False,
+		"end": False,
+		"duration": False
+	}
+	for cost in costs:
+		date = parse(cost['date'])
+		if (period['start'] and date.timestamp() < period['start'].timestamp()) or not period['start']:
+			period['start'] = date
+		if (period['end'] and date.timestamp() > period['end'].timestamp()) or not period['end']:
+			period['end'] = date
+	period['duration'] = (period['end'] - period['start']).days
+	return period
+
+def getDatesDict(period):
+	lastUnoptimized = {'costs': 0}
+	byDates = {}
+	for cur in period:
+		if cur['matchingEventTypes'] == False:
+			lastUnoptimized = cur
+			unoptimized = cur['costs']
+		else:
+			unoptimized = lastUnoptimized['costs']
+		byDates[cur['date']] = {
+			"unoptimized": unoptimized,
+			"cost": cur['costs'],
+			"hasEvent": cur['matchingEventTypes'],
+			"savings": {},
+			"totalSaving": 0
+		}
+	return byDates
+
+def gatherDatas(costs, eventSavings):
+	dates = getDatesDict(costs)
+	summary = {
+		"costs": 0,
+		"savings": {},
+		"eventsApplyCounter": {},
+		"totalSaving": 0
+	}
+
+	for eventType in eventSavings:
+		for event in eventSavings[eventType]:
+			date = event['date']
+			# Filling cur date savings
+			dates[date]['savings'][eventType] = event['saving']
+			dates[date]['totalSaving'] += event['saving']
+			# Adding to summary
+			summary['costs'] += dates[date]['cost']
+			summary['totalSaving'] += event['saving']
+			if eventType not in summary['savings']:
+				summary['savings'][eventType] = event['saving']
+				summary['eventsApplyCounter'][eventType] = (1 if event['saving'] > 0 else 0)
+			else:
+				summary['savings'][eventType] += event['saving']
+				summary['eventsApplyCounter'][eventType] += (1 if event['saving'] > 0 else 0)
+
+	return {
+		"dates": dates,
+		"summary": summary
+	}
+
+def lookForInconsistencies(dates):
+	nbErrors = 0
+	for date in dates:
+		cur = dates[date]
+		humanDate = parse(date).strftime("%Y-%m-%d %H:%M")
+		if not cur['hasEvent'] and cur['totalSaving'] > 0:
+			print("Cost metric on %s has %d savings without linked event !" % (humanDate, cur['totalSaving']))
+			nbErrors += 1
+		tot = cur['cost'] + cur['totalSaving']
+		if tot != cur['unoptimized']:
+			op = "lower" if tot < cur['unoptimized'] else "bigger"
+			print("On %s cost metric, sum of real cost and calculated saving (%d + %d = %d) is %s than unoptimized cost (%d) !" %
+				(humanDate, cur['cost'], cur['totalSaving'], tot, op, cur['unoptimized']))
+			nbErrors += 1
+
+	if nbErrors == 0:
+		print("PASSED:\tNo cost metric have saving without linked event.")
+		print("PASSED:\tEvery sum of real cost with saving is equal to corresponding unoptimized cost.")
+		print("> No inconsistency found !")
+	else:
+		print("\n\nFAILURE:\t%d (against %d metrics) inconsistencies found." % (nbErrors, len(dates)))
+
+def main():
+	datas = json.loads(sys.stdin.read())
+	events = datas['events']
+	costs = datas['costs']
+	period = getPeriod(costs)
+	freq = round((len(costs) / (period['duration'] * 24)))
+	print(str(len(costs)) +" cost metrics loaded between "+ period['start'].strftime("%Y-%m-%d %H:%M") + 
+			" and  "+ period['end'].strftime("%Y-%m-%d %H:%M") +" ("+ str(period['duration']) +" days, "+ str(freq) +" metric/hour).")
+	
+
+	result = gatherDatas(costs, events)
+	print("Total real cost during this period : %d" % result['summary']['costs'])
+	print("Total savings : %d (%.2f%% of costs)" %
+		(result['summary']['totalSaving'], (result['summary']['totalSaving'] / result['summary']['costs']) * 100)
+	)
+	for cur in result['summary']['savings']:
+		print("\t%s = %d (%.2f%% of savings), applied on %d cost metrics, (%.2f%% of total)" % (
+			cur, result['summary']['savings'][cur],
+			(result['summary']['savings'][cur] / result['summary']['totalSaving']) * 100 if result['summary']['totalSaving'] > 0 else 0,
+			result['summary']['eventsApplyCounter'][cur],
+			(result['summary']['eventsApplyCounter'][cur] / len(costs)) * 100
+		))
+	print("")
+	lookForInconsistencies(result['dates'])
+	return (0)
+
+if __name__ == "__main__":
+    sys.exit(main())

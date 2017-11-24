@@ -36,7 +36,7 @@
                 return ({
                     label: datasetName,
                     data: resources.map(function(cur) {
-                        cur.value = (typeof cur.saving != 'undefined' ? cur.saving : cur.costs);
+                        cur.value = (typeof cur.saving != 'undefined' ? cur.saving : -cur.costs);
                         return cur;
                     }),
                     fill: true

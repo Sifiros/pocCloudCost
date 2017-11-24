@@ -4,6 +4,7 @@ from TeevityAPI import TeevityAPI
 from gainCalculator import GainCalculator
 from dateutil.parser import *
 from datetime import *
+import json
 import sys
 
 def printEventTypeFromSavings(savings):
@@ -14,15 +15,23 @@ def printEventTypeFromSavings(savings):
 
 
 def main():
+    PRINT = False if len(sys.argv) > 1 and sys.argv[1] == "--json" else True
     # try:
     calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
-    calculator.printCurrentScope()
+    if PRINT:
+        calculator.printCurrentScope()
 
     calculator.processEvents()
-    calculator.printEventScopes()
+    if PRINT:
+        calculator.printEventScopes()
+
     savings = calculator.getSavings()
-    print('------------------ Savings by events : ')
-    printEventTypeFromSavings(savings)
+    
+    if PRINT:
+        print('------------------ Savings by events : ')
+        printEventTypeFromSavings(savings['events'])
+    else:
+        print(json.dumps(savings))
 
     # except Exception as error:
     #      print("An error occured %s" % (error), file=sys.stderr)
