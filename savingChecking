@@ -26,7 +26,7 @@ def getPeriod(costs):
 	return period
 
 def getDatesDict(period):
-	lastUnoptimized = 0
+	lastUnoptimized = {'costs': 0}
 	byDates = {}
 	for cur in period:
 		if cur['matchingEventTypes'] == False:
