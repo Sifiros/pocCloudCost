@@ -113,7 +113,7 @@ def main():
 	for cur in result['summary']['savings']:
 		print("\t%s = %d (%.2f%% of savings), applied on %d cost metrics, (%.2f%% of total)" % (
 			cur, result['summary']['savings'][cur],
-			(result['summary']['savings'][cur] / result['summary']['totalSaving']) * 100,
+			(result['summary']['savings'][cur] / result['summary']['totalSaving']) * 100 if result['summary']['totalSaving'] > 0 else 0,
 			result['summary']['eventsApplyCounter'][cur],
 			(result['summary']['eventsApplyCounter'][cur] / len(costs)) * 100
 		))
