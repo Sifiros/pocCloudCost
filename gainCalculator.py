@@ -176,25 +176,26 @@ class GainCalculator():
             for curEvent in events:
                 if curEvent not in eventsApplied:
                     events[curEvent].append({'saving': 0, 'date': curDate.isoformat()})
-        self.storeToFile(events, costs)
-        return events
+
+        result = {
+            "events": events,
+            "costs": costs
+        }
+        self.storeToFile(result)                    
+        return result
 
 
-    def storeToFile(self, events, costs):
-        for cost in costs:
-            cost['matchingEventTypes'] = None
+    def storeToFile(self, data):
+        for cost in data['costs']:
+            cost['matchingEventTypes'] = False if not cost['matchingEventTypes'] else True
             cost['date'] = cost['date'].isoformat()
 
         with open('./ui/eventSavings.json', 'w') as fileToWrite:
             fileToWrite.write('datas = ')
         fileToWrite.close()
         with open ('./ui/eventSavings.json', 'a+') as fileToEdit:
-            fileToEdit.write(json.dumps({
-                'events': events,
-                'costs': costs
-            }))
+            fileToEdit.write(json.dumps(data))
         fileToEdit.close()
-
 
     #
     # Debug Print Functions
