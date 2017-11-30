@@ -162,7 +162,7 @@ class GainCalculator():
                 totalSaving = unoptimizedCosts[curDate] - metric['costs']
                 for curScope in metric['matchingEventTypes']:
                     if 'saving' not in curScope:
-                        self.balanceSavingPercents(metric['matchingEventTypes'], curScope, metric['costs'], unoptimizedCosts[curDate], totalSaving)
+                        self.balanceSavingPercents(metric['matchingEventTypes'], curScope, metric['costs'], unoptimizedCosts[curDate], totalSaving) # ça du coup ca c'est useless
 
                     curSaving = (unoptimizedCosts[curDate] * curScope['saving'])
                     if (totalSaving - curSaving) < 0:
@@ -182,7 +182,7 @@ class GainCalculator():
             "events": events,
             "costs": costs
         }
-        self.storeToFile(result)                    
+        self.storeToFile(result)
         return result
 
 

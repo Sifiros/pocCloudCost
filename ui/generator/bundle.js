@@ -63,6 +63,18 @@ _angular2.default.module('app').controller('MyCtrl', function ($scope, $rootScop
         $scope.form.costJson = (0, _stringify2.default)(stats.costs);
         $scope.form.eventJson = (0, _stringify2.default)(stats.events);
     };
+
+    $scope.downloadObjectAsJson = function (exportObj, exportName) {
+        console.log("entering download");
+        if (exportObj && exportName) {
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent((0, _stringify2.default)(exportObj));
+            var downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", exportName + ".json");
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+    };
 });
 
 function generate(form) {
@@ -78,7 +90,6 @@ function generate(form) {
 
     var curCost = form.startCost;
     var riApplied = false;
-    var riAppliedCost = curCost;
     var onOffStatus = true;
     var savings = {
         onoff: 0
@@ -89,7 +100,7 @@ function generate(form) {
     while (!cur.isSame(endDate)) {
         if (form.dateRI && cur.isSameOrAfter(form.dateRI) && !riApplied) {
             riApplied = true;
-            curCost = riAppliedCost = curCost * form.reductionRI;
+            curCost = curCost * form.reductionRI;
             addEvent(cur, 'reserved_instance');
         }
 
@@ -102,7 +113,6 @@ function generate(form) {
                 if (onOffStatus) {
                     // En weekend alors que c'est On : on éteint
                     addEvent(cur, 'shutdown_instance');
-                    // curCost *= form.reductionWeekEndOnOff
                     onOffStatus = false;
                 }
                 savings.onoff = curCost * form.reductionWeekEndOnOff;
@@ -114,7 +124,6 @@ function generate(form) {
                         addEvent(cur, 'start_instance');
                         onOffStatus = true;
                     }
-                    // curCost = riAppliedCost
                     savings.onoff = 0;
                 } else if (!cur.isBetween(curStartDate, curShutdownDate)) {
                     // En semaine et hors journée : faut éteindre
@@ -122,18 +131,15 @@ function generate(form) {
                         addEvent(cur, 'shutdown_instance');
                         onOffStatus = false;
                     }
-                    // curCost *= form.reductionWeekOnOff
                     savings.onoff = curCost * form.reductionWeekOnOff;
                 }
             }
-            if (cur.isSame('2017-11-16T01:00:00.000Z')) console.log('RI result : ' + savings.onoff + ' // onoff ' + onOffStatus + ' // between ' + cur.isBetween(curStartDate, curShutdownDate));
         }
 
         costs.push({
             costs: { ec2: curCost - savings.onoff },
             date: cur.toISOString()
         });
-
         cur.add(1, 'hours');
     }
 
