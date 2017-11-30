@@ -136,13 +136,14 @@ class GainCalculator():
         for scope in scopes:
             if scope == targetScope:
                 targetPassed = True
-            elif 'saving' in scope and targetPassed:
+            # elif 'saving' in scope and targetPassed:
+            if 'saving' not in scope:
                 toBalance.append(scope)
 
         if len(toBalance) == 0: # no more scope after this : giving him whole remaining saving
             targetScope['saving'] = wholeSaving
         else:
-            targetScope['saving'] = wholeSaving
+            targetScope['saving'] = ((float(totalSaving) / len(toBalance)) / unoptimized)
 
 
     # Renvoie chaque event ses metrics de savings pour chaque date ayant un cost
