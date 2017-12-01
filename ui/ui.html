@@ -20,34 +20,69 @@
     <canvas id="teevityChart"></canvas>
 </div>
 
+<!-- create a table with elems created by caussa -->
+
+<div id="tableContainer">
+        <table id = "dataTable"></table>
+</div>
+
 <script>
 
     window.onload = function() {
-        registerPlugin('teevityChart');
-        var datasets = Object.keys(datas.events).map(function(eventName) {
-            return metricsToDataset(eventName, datas.events[eventName])
-        })
-        datasets.push(metricsToDataset('Total costs', datas.costs))
-        window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
-        // window.addMockDataset();
-        window.chart.refresh();
+            registerPlugin('teevityChart');
+            var datasets = Object.keys(datas.events).map(function (eventName) {
+                return metricsToDataset(eventName, datas.events[eventName])
+            })
+            datasets.push(metricsToDataset('Total costs', datas.costs))
+            window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
+            // window.addMockDataset();
+            window.chart.refresh();
 
-        function metricsToDataset(datasetName, resources) {
+            function metricsToDataset(datasetName, resources) {
                 return ({
                     label: datasetName,
-                    data: resources.map(function(cur) {
+                    data: resources.map(function (cur) {
                         cur.value = (typeof cur.saving != 'undefined' ? cur.saving : cur.costs);
                         return cur;
                     }),
                     fill: true
                 });
-        }
+            }
+            var tabScopes = datas.eventScopes;
+            var strToAppend = "<tr><td style=' color: red;'>startDate</td>";
+            strToAppend += "<td style='color: red;'>endDate</td>";
+            strToAppend += "<td style='color: red;'>savings</td></tr>";
+            var totalEarned = 0;
 
+            for (x in tabScopes) {
+
+                console.log(tabScopes[x]);
+                strToAppend += "<tr><td>" + x + "</td></tr>";
+                tabScopes[x].forEach(function (item) {
+
+                    totalEarned += item.totalSaving;
+                    strToAppend += "<tr><td style='color: blue; text-align: right;'>" + item.startDate + "</td>";
+                    strToAppend += "<td style='color: blue; text-align: right;'>" + item.endDate + "</td>";
+                    strToAppend += "<td style='color: blue; text-align: right;'>" + item.totalSaving + "</td></tr>";
+                    console.log(item);
+                });
+            }
+            strToAppend = "<tr><td style='color: green;'>" + "The total amount of Savings in this period is " + totalEarned + "</td></tr>" + strToAppend;
+
+            $('#dataTable').append(strToAppend);
     }
 </script>
+<!--
+<script>
+var rows = 6,
+cols = 7;
 
-<!-- create a table with elems created by caussa -->
-
-<div id="tableContainer">
-    <table id = "dataTable"></table>
-</div>
+        for(var i = 0; i < rows; i++) {
+            $('table').append('<tr></tr>');
+            for(var j = 0; j < cols; j++) {
+                $('table').find('tr').eq(i).append('<td></td>');
+                $('table').find('tr').eq(i).find('td').eq(j).attr('data-row',          i).attr('data-col', j);
+            }
+        }
+</script>
+-->

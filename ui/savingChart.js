@@ -85,9 +85,6 @@ function prepareDatasets(datasetConfig) {
 		});
 	}
 
-	for (cur of datasets) {
-		console.log(cur.label);
-	}
 
 	// sort the array so Total Cost appears firts
 	datasets.sort( function(a, b) {
@@ -97,10 +94,6 @@ function prepareDatasets(datasetConfig) {
 			return 1;
 		return 0;
 	})
-	for (cur of datasets) {
-		console.log(cur.label);
-	}
-
 
 	return ({
 		datasets: datasets,
@@ -133,7 +126,6 @@ function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = [], lines
 		},
 		options: {
 			responsive: true,
-			order : true,
 			title:{
 				display:true,
 				text: chartTitle
