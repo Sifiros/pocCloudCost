@@ -24,8 +24,8 @@
 
     window.onload = function() {
         registerPlugin('teevityChart');
-        var datasets = Object.keys(datas.events).map(function(eventName) {
-            return metricsToDataset(eventName, datas.events[eventName])
+        var datasets = Object.keys(datas.eventSavings).map(function(eventName) {
+            return metricsToDataset(eventName, datas.eventSavings[eventName])
         })
         datasets.push(metricsToDataset('Total costs', datas.costs))
         window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
