@@ -105,7 +105,9 @@ class GainCalculator():
         costs = self.mergeResourceCosts(list(costs))
         eventSavings = self.createEventsDict(True)
         eventScopes = self.createEventsDict(True)
-        lastCost = costs[0]['costs'] if len(costs) > 0 else 0
+        lastScopes = [] # scopes applied on last cost metric, required to detect whenever a scope ends before a child one
+        lastCost = costs[0]['costs'] if len(costs) > 0 else 0 # required for scope theorical costs (real cost before a scope beginning)
+
         for metric in costs:
             curDate = metric['date']
             metric['matchingEventTypes'] = self.getMatchingEventTypes(curDate)
@@ -114,7 +116,12 @@ class GainCalculator():
 
             if currentScopes != False: # Cout actuel compris dans au moins un scope
                 savings = {}
+                i = 0
                 for curScope in currentScopes:
+                    # a parent scope disappeared ; must sync theorical costs :
+                    if len(lastScopes) > (i + 1) and curScope == lastScopes[(i + 1)]: 
+                        curScope['theoricalCost'] = lastScopes[i]['theoricalCost'] # disappeared scope theorical cost
+
                     if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / totalSaving
                         curScope['theoricalCost'] = lastCost
                         curScope['totalSaving'] = 0
@@ -122,6 +129,7 @@ class GainCalculator():
                     # Theorical saving between scope theorical cost and current real cost
                     savings[curScope['type']] = (curScope['theoricalCost'] - metric['costs'])
                     eventsApplied.append(curScope['type'])
+                    i += 1
 
                 nbScopes = len(currentScopes)
                 for k, v in enumerate(currentScopes):
@@ -133,12 +141,13 @@ class GainCalculator():
                         'date': curDate.isoformat()
                     })
                     v['totalSaving'] += saving
-            # On set à 0 le bénéfice des autres scopes pour la date donnée
+            # Set to 0 every non-applied event's saving for current date
             for curEvent in eventSavings:
                 if curEvent not in eventsApplied:
                     eventSavings[curEvent].append({'saving': 0, 'date': curDate.isoformat()})
 
             lastCost = metric['costs']
+            lastScopes = list(currentScopes) if currentScopes != False else []
 
         for name in eventScopes:
             eventScopes[name] = list(map(lambda scope: ({
