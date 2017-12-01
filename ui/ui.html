@@ -29,16 +29,16 @@
 <script>
 
     window.onload = function() {
-            registerPlugin('teevityChart');
-            var datasets = Object.keys(datas.events).map(function (eventName) {
-                return metricsToDataset(eventName, datas.events[eventName])
-            })
-            datasets.push(metricsToDataset('Total costs', datas.costs))
-            window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
-            // window.addMockDataset();
-            window.chart.refresh();
+        registerPlugin('teevityChart');
+        var datasets = Object.keys(datas.eventSavings).map(function(eventName) {
+            return metricsToDataset(eventName, datas.eventSavings[eventName])
+        })
+        datasets.push(metricsToDataset('Total costs', datas.costs))
+        window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
+        // window.addMockDataset();
+        window.chart.refresh();
 
-            function metricsToDataset(datasetName, resources) {
+        function metricsToDataset(datasetName, resources) {
                 return ({
                     label: datasetName,
                     data: resources.map(function (cur) {
@@ -72,17 +72,3 @@
             $('#dataTable').append(strToAppend);
     }
 </script>
-<!--
-<script>
-var rows = 6,
-cols = 7;
-
-        for(var i = 0; i < rows; i++) {
-            $('table').append('<tr></tr>');
-            for(var j = 0; j < cols; j++) {
-                $('table').find('tr').eq(i).append('<td></td>');
-                $('table').find('tr').eq(i).find('td').eq(j).attr('data-row',          i).attr('data-col', j);
-            }
-        }
-</script>
--->
