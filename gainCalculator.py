@@ -84,18 +84,8 @@ class GainCalculator():
         return period
 
     # Permet de trier une liste  d'event scope par date
-    # Tri par priorité mit en commentaire, le partage de bénéfice se fait actuellement dans l'ordre d'apparition des events
     def getEventScopePriority(self, scope):
         return scope['startDate'].timestamp()
-        # priorities = ({
-        #     "reserved_instance": 1,
-        #     "onoff": 10,
-        #     "iops": 10,
-        #     "destroy_ebs_volume": 10
-        # })
-        # if (scope['type']) not in priorities:
-        #     return 10
-        # return priorities[(scope['type'])]
 
     # Récupère les event scope matchant date
     def getMatchingEventTypes(self, date):
@@ -106,45 +96,10 @@ class GainCalculator():
                date.timestamp() < eventScope['endDate'].timestamp() and eventScope['custodianEffective']:
                 eventTypes.append(eventScope)
                 found = True
-        if found: # FIX PRIORITY ???
+        if found: 
             eventTypes.sort(key=self.getEventScopePriority)
             return eventTypes
         return False
-
-    # Renvoit un dictionnaire de chaque date avec son coût non optimisé théorique
-    # Associe aussi chaque coût (de period) avec les events scopes liés dans cost['matchingEventTypes']
-    def getUnoptimizedCosts(self, period):
-        lastUnoptimized = 0
-        byDates = {}
-        for cur in period:
-            cur['matchingEventTypes'] = self.getMatchingEventTypes(cur['date'])
-            if cur['matchingEventTypes'] == False:
-                lastUnoptimized = cur
-                unoptimized = cur['costs']
-            else:
-                unoptimized = lastUnoptimized['costs']
-            byDates[cur['date']] = unoptimized
-        return byDates
-
-
-    # useless atm, censé pouvoir définir le bénéfice d'un nouveau scope défini comme prioritaire à d'autres (ayant déjà leur bénéfice)
-    def balanceSavingPercents(self, scopes, targetScope, costs, unoptimized, totalSaving):
-        targetPassed = False
-        wholeSaving = (float(totalSaving) / unoptimized)
-        toBalance = []
-
-        for scope in scopes:
-            if scope == targetScope:
-                targetPassed = True
-            # elif 'saving' in scope and targetPassed:
-            if 'saving' not in scope:
-                toBalance.append(scope)
-
-        if len(toBalance) == 0: # no more scope after this : giving him whole remaining saving
-            targetScope['saving'] = wholeSaving
-        else:
-            targetScope['saving'] = ((float(totalSaving) / len(toBalance)) / unoptimized)
-
 
     # Renvoie chaque event ses metrics de savings pour chaque date ayant un cost
     # Nécessite l'appel préalable de processEvents (création des eventscopes)
@@ -152,34 +107,41 @@ class GainCalculator():
     def getSavings(self):
         costs = list(self.costs)
         costs = self.mergeResourceCosts(list(costs))
-        unoptimizedCosts = self.getUnoptimizedCosts(costs)
-        events = self.createEventsDict(True)
+        eventSavings = self.createEventsDict(True)
+        lastCost = costs[0]['costs'] if len(costs) > 0 else 0
         for metric in costs:
             curDate = metric['date']
+            metric['matchingEventTypes'] = self.getMatchingEventTypes(curDate)
             eventsApplied = [] # Liste des noms d'event comprenant la date actuelle
 
-            if metric['matchingEventTypes'] != False: # Cout actuel compris dans au moins un scope
-                totalSaving = unoptimizedCosts[curDate] - metric['costs']
-                for curScope in metric['matchingEventTypes']:
-                    if 'saving' not in curScope:
-                        self.balanceSavingPercents(metric['matchingEventTypes'], curScope, metric['costs'], unoptimizedCosts[curDate], totalSaving) # ça du coup ca c'est useless
+            currentScopes = metric['matchingEventTypes']
+            if currentScopes != False: # Cout actuel compris dans au moins un scope
+                savings = {}
+                for curScope in currentScopes:
+                    if 'theoricalCost' not in curScope:
+                        curScope['theoricalCost'] = lastCost
+                    # Theorical saving between scope theorical cost and current real cost
+                    savings[curScope['type']] = (curScope['theoricalCost'] - metric['costs'])
+                    eventsApplied.append(curScope['type'])
 
-                    curSaving = (unoptimizedCosts[curDate] * curScope['saving'])
-                    if (totalSaving - curSaving) < 0:
-                        curSaving = totalSaving
-                    totalSaving = totalSaving - curSaving
-
-                    events[curScope['type']].append({
-                        'saving': curSaving,
+                nbScopes = len(currentScopes)
+                for k, v in enumerate(currentScopes):
+                    saving = savings[v['type']]
+                    if k < (nbScopes - 1): # substrat next theorical saving for the current real one
+                        saving -= savings[currentScopes[(k + 1)]['type']]
+                    eventSavings[v['type']].append({
+                        'saving': saving,
                         'date': curDate.isoformat()
                     })
-                    eventsApplied.append(curScope['type'])
-            for curEvent in events:
+
+            for curEvent in eventSavings:
                 if curEvent not in eventsApplied:
-                    events[curEvent].append({'saving': 0, 'date': curDate.isoformat()})
+                    eventSavings[curEvent].append({'saving': 0, 'date': curDate.isoformat()})
+
+            lastCost = metric['costs']
 
         result = {
-            "events": events,
+            "eventSavings": eventSavings,
             "costs": costs
         }
         self.storeToFile(result)

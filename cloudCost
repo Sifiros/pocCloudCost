@@ -22,14 +22,14 @@ def main():
         calculator.printCurrentScope()
 
     calculator.processEvents()
-    if PRINT:
-        calculator.printEventScopes()
-
     savings = calculator.getSavings()
     
     if PRINT:
+        calculator.printEventScopes()
+
+    if PRINT:
         print('------------------ Savings by events : ')
-        printEventTypeFromSavings(savings['events'])
+        printEventTypeFromSavings(savings['eventSavings'])
     else:
         print(json.dumps(savings))
 

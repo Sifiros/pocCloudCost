@@ -8,6 +8,7 @@ dataType = {'ri':"cp ./api/mocks/ri_only_cost.py ./api/costs.py && cp ./api/mock
             'both':"cp ./api/mocks/both_cost.py ./api/costs.py && cp ./api/mocks/both_event.py ./api/events.py",
             'cloudC':"cp ./api/mocks/cloudC_only_cost.py ./api/costs.py && cp ./api/mocks/cloudC_only_event.py ./api/events.py",
             'sametime':"cp ./api/mocks/both_sametime_cost.py ./api/costs.py && cp ./api/mocks/both_sametime_event.py ./api/events.py",
+            'oneweek':"cp ./api/mocks/oneweek_cost.py ./api/costs.py && cp ./api/mocks/oneweek_event.py ./api/events.py",
             }
 
 def usage():
