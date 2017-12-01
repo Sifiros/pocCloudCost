@@ -157,7 +157,7 @@ class GainCalculator():
 
     def storeToFile(self, data):
         for cost in data['costs']:
-            cost.pop('matchingEventTypes', None)
+            cost['matchingEventTypes'] = False if not cost['matchingEventTypes'] else True
             cost['date'] = cost['date'].isoformat()
 
         with open('./ui/eventSavings.json', 'w') as fileToWrite:
