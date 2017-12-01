@@ -10,9 +10,11 @@ angular.module('app')
         duration: 30,
 
         dateRI: false,
+        endDateRI: false,
         reductionRI: 50,
 
         dateOnOff: false,
+        endDateOnOff: false,
         reductionWeekOnOff: 30,
         reductionWeekEndOnOff: 70,
         timeOnWeek: 9,
@@ -25,19 +27,19 @@ angular.module('app')
     if (!$scope.init) {
         $scope.init = true;
         $('#period').datepicker()
-        .on('changeDate', function(e) {
-            $scope.form.startDate = moment(e.target.value, "MM/DD/YYYY").toISOString()
-        })
+        .on('changeDate', function(e) { $scope.form.startDate = moment(e.target.value, "MM/DD/YYYY").toISOString() })
 
         $('#dateRI').datepicker()
-        .on('changeDate', function(e) {
-            $scope.form.dateRI = moment(e.target.value, "MM/DD/YYYY").toISOString()
-        })
+        .on('changeDate', function(e) { $scope.form.dateRI = moment(e.target.value, "MM/DD/YYYY").toISOString() })
+
+        $('#endDateRI').datepicker()
+        .on('changeDate', function(e) { $scope.form.endDateRI = moment(e.target.value, "MM/DD/YYYY").toISOString() })
 
         $('#dateOnOff').datepicker()
-        .on('changeDate', function(e) {
-            $scope.form.dateOnOff = moment(e.target.value, "MM/DD/YYYY").toISOString()
-        })
+        .on('changeDate', function(e) { $scope.form.dateOnOff = moment(e.target.value, "MM/DD/YYYY").toISOString() })
+
+        $('#endDateOnOff').datepicker()
+        .on('changeDate', function(e) { $scope.form.endDateOnOff = moment(e.target.value, "MM/DD/YYYY").toISOString() })
     }
 
     $scope.onValid = (e) => {
@@ -93,8 +95,11 @@ function generate(form) {
             curCost = (curCost * form.reductionRI)
             addEvent(cur, 'reserved_instance');
         }
-
-        if (form.dateOnOff && cur.isSameOrAfter(form.dateOnOff)) {
+        savings = {
+            "onoff" : 0
+        }
+        if (form.dateOnOff && cur.isSameOrAfter(form.dateOnOff) &&
+            (!form.endDateOnOff || cur.isBefore(form.endDateOnOff))) {
             var curShutdownDate = moment(cur).hour(form.timeOffWeek)
             var day = cur.day();
             var isWeekend = (day == 6) || (day == 0) || (day == 5 && cur.isSameOrAfter(curShutdownDate));
