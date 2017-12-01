@@ -83,10 +83,6 @@ class GainCalculator():
             cur['costs'] = tot
         return period
 
-    # Permet de trier une liste  d'event scope par date
-    def getEventScopePriority(self, scope):
-        return scope['startDate'].timestamp()
-
     # Récupère les event scope matchant date
     def getMatchingEventTypes(self, date):
         eventTypes = [];
@@ -97,7 +93,7 @@ class GainCalculator():
                 eventTypes.append(eventScope)
                 found = True
         if found: 
-            eventTypes.sort(key=self.getEventScopePriority)
+            eventTypes.sort(key= lambda scope : scope['startDate'].timestamp())
             return eventTypes
         return False
 
@@ -165,11 +161,8 @@ class GainCalculator():
             cost['date'] = cost['date'].isoformat()
 
         with open('./ui/eventSavings.json', 'w') as fileToWrite:
-            fileToWrite.write('datas = ')
+            fileToWrite.write('datas = ' + json.dumps(data))
         fileToWrite.close()
-        with open ('./ui/eventSavings.json', 'a+') as fileToEdit:
-            fileToEdit.write(json.dumps(data))
-        fileToEdit.close()
 
     #
     # Debug Print Functions
