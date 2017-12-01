@@ -85,6 +85,16 @@ function prepareDatasets(datasetConfig) {
 		});
 	}
 
+
+	// sort the array so Total Cost appears firts
+	datasets.sort( function(a, b) {
+		if (a.label == "Total costs")
+			return -1;
+		else if (b.label == "Total costs")
+			return 1;
+		return 0;
+	})
+
 	return ({
 		datasets: datasets,
 		lines: lines
@@ -107,7 +117,12 @@ function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = [], lines
 	return ({
 		type: 'line',
 		data: {
-			datasets: datasets
+			datasets: datasets,
+			order: function(t1, t2) {
+				console.log(t1);
+				console.log(t2);
+				return t1 < t2;
+			}
 		},
 		options: {
 			responsive: true,
