@@ -108,18 +108,21 @@ class GainCalculator():
         costs = list(self.costs)
         costs = self.mergeResourceCosts(list(costs))
         eventSavings = self.createEventsDict(True)
+        eventScopes = self.createEventsDict(True)
         lastCost = costs[0]['costs'] if len(costs) > 0 else 0
         for metric in costs:
             curDate = metric['date']
             metric['matchingEventTypes'] = self.getMatchingEventTypes(curDate)
             eventsApplied = [] # Liste des noms d'event comprenant la date actuelle
-
             currentScopes = metric['matchingEventTypes']
+
             if currentScopes != False: # Cout actuel compris dans au moins un scope
                 savings = {}
                 for curScope in currentScopes:
-                    if 'theoricalCost' not in curScope:
+                    if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / totalSaving
                         curScope['theoricalCost'] = lastCost
+                        curScope['totalSaving'] = 0
+                        eventScopes[curScope['type']].append(curScope)
                     # Theorical saving between scope theorical cost and current real cost
                     savings[curScope['type']] = (curScope['theoricalCost'] - metric['costs'])
                     eventsApplied.append(curScope['type'])
@@ -127,22 +130,30 @@ class GainCalculator():
                 nbScopes = len(currentScopes)
                 for k, v in enumerate(currentScopes):
                     saving = savings[v['type']]
-                    if k < (nbScopes - 1): # substrat next theorical saving for the current real one
+                    if k < (nbScopes - 1): # substract next theorical saving for the current real one
                         saving -= savings[currentScopes[(k + 1)]['type']]
                     eventSavings[v['type']].append({
                         'saving': saving,
                         'date': curDate.isoformat()
                     })
-
+                    v['totalSaving'] += saving
+            # On set à 0 le bénéfice des autres scopes pour la date donnée
             for curEvent in eventSavings:
                 if curEvent not in eventsApplied:
                     eventSavings[curEvent].append({'saving': 0, 'date': curDate.isoformat()})
 
             lastCost = metric['costs']
 
+        for name in eventScopes:
+            eventScopes[name] = list(map(lambda scope: ({
+                "startDate": scope["startDate"].isoformat(),
+                "endDate": scope["endDate"].isoformat(),
+                "totalSaving": scope["totalSaving"]
+            }), eventScopes[name]))
         result = {
             "eventSavings": eventSavings,
-            "costs": costs
+            "costs": costs,
+            "eventScopes": eventScopes
         }
         self.storeToFile(result)
         return result
@@ -150,7 +161,7 @@ class GainCalculator():
 
     def storeToFile(self, data):
         for cost in data['costs']:
-            cost['matchingEventTypes'] = False if not cost['matchingEventTypes'] else True
+            cost.pop('matchingEventTypes', None)
             cost['date'] = cost['date'].isoformat()
 
         with open('./ui/eventSavings.json', 'w') as fileToWrite:
