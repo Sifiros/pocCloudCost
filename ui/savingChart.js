@@ -52,7 +52,6 @@ function TeevityChart(blockId, title, datasets) {
 	}
 }
 
-
 /*
  * Chart init functions
  */
