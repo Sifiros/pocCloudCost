@@ -118,14 +118,12 @@ class GainCalculator():
                 savings = {}
                 i = 0
                 for curScope in currentScopes:
-                    # a parent scope disappeared ; must sync theorical costs :
-                    if len(lastScopes) > (i + 1) and curScope == lastScopes[(i + 1)]: 
-                        curScope['theoricalCost'] = lastScopes[i]['theoricalCost'] # disappeared scope theorical cost
-
                     if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / totalSaving
                         curScope['theoricalCost'] = lastCost
                         curScope['totalSaving'] = 0
                         eventScopes[curScope['type']].append(curScope)
+                    else: # sync theorical costs (in case of parent scope ending)
+                        curScope['theoricalCost'] = lastScopes[i]['theoricalCost']
                     # Theorical saving between scope theorical cost and current real cost
                     savings[curScope['type']] = (curScope['theoricalCost'] - metric['costs'])
                     eventsApplied.append(curScope['type'])
