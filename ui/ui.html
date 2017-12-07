@@ -57,8 +57,6 @@
             var earnedDuringCurrentCycle;
             var finalStr = ""
 
-            // pour fix, faire des blocs dans la boucle, là ça stack toujours au début du coup on a une pile c'est moche sa race
-
             for (x in tabScopes) {
                 earnedDuringCurrentCycle = 0;
                 var strToAppend = ""
@@ -69,9 +67,9 @@
                     strToAppend += "<td>" + moment(item.endDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
                     strToAppend += "<td>" + item.totalSaving + "</td></tr>";
                 });
-                finalStr += "<tr><th scope='row'>" + x + "</th><th>" + earnedDuringCurrentCycle + "</th></tr>" + strToAppend;
+                finalStr += "<tr><th scope='row'>" + x + "</th><th></th><th>" + earnedDuringCurrentCycle + "</th></tr>" + strToAppend;
             }
-            finalStr = "<thead><tr><td>" + "The total amount of Savings in this period is " + totalEarned + "</td></tr>" + tableHead + finalStr + "</tbody>";
+            finalStr = "<thead><tr><td><b>" + "The total amount of Savings in this period is " + totalEarned + "</b></td></tr>" + tableHead + finalStr + "</tbody>";
 
             $('#dataTable').append(finalStr);
     }
