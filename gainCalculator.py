@@ -7,6 +7,7 @@ from dateutil.parser import *
 from datetime import *
 
 class GainCalculator():
+    nextId = 0
     costs = []
     events = []
     endPeriodDate = datetime.now()
@@ -23,7 +24,12 @@ class GainCalculator():
                 self.endPeriodDate = cost['date']
         self.events = events
         for event in self.events:
+            event['id'] = self.getNewId()
             event['date'] = parse(event['date'])
+
+    def getNewId(self):
+        self.nextId += 1
+        return (self.nextId - 1)
 
     def createEventsDict(self, islist):
         return ({
@@ -35,6 +41,7 @@ class GainCalculator():
 
     def pushEventScope(self, eventType, scope, dateEnd):
         self.eventScopes.append({
+            'id': scope['id'],
             'type': eventType,
             'startDate': scope['startDate'],
             'endDate': dateEnd,
@@ -50,21 +57,21 @@ class GainCalculator():
             if cur['type'] == 'shutdown_instance': # associer events aux instanceid
                 if curScopes['onoff'] and curScopes['onoff']['effective'] == False:
                     self.pushEventScope('onoff', curScopes['onoff'], cur['date'])
-                curScopes['onoff'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}
+                curScopes['onoff'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources'], 'id': cur['id']}
             elif cur['type'] == 'start_instance':
                 if curScopes['onoff'] and curScopes['onoff']['effective'] is True:
                     self.pushEventScope('onoff', curScopes['onoff'], cur['date'])
-                curScopes['onoff'] = {'startDate': cur['date'], 'effective': False, 'affectedResources': cur['affectedResources']}
+                curScopes['onoff'] = {'startDate': cur['date'], 'effective': False, 'affectedResources': cur['affectedResources'], 'id': cur['id']}
             elif cur['type'] == 'modify_ebs_iops':
                 if curScopes['iops']:
                     self.pushEventScope('iops', curScopes['iops'], cur['date'])
-                curScopes['iops'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}
+                curScopes['iops'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources'], 'id': cur['id']}
             elif cur['type'] == 'destroy_ebs_volume':
-                self.pushEventScope(cur['type'], {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}, self.endPeriodDate)
+                self.pushEventScope(cur['type'], {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources'], 'id': cur['id']}, self.endPeriodDate)
             elif cur['type'] == 'reserved_instance':
                 if curScopes['reserved_instance'] and curScopes['reserved_instance']['effective'] == False:
                     self.pushEventScope('reserved_instance', curScopes['reserved_instance'], cur['date'])
-                curScopes['reserved_instance'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}
+                curScopes['reserved_instance'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources'], 'id': cur['id']}
 
         if curScopes['onoff']:
             self.pushEventScope('onoff', curScopes['onoff'], self.endPeriodDate)
