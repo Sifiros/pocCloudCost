@@ -30,7 +30,7 @@ def parseTeevityCsvCosts(filename):
 			byDates[date] = {'date': date, 'costs': {}}
 			asList.append(byDates[date])
 
-		if t not in byDates[date]:
+		if t not in byDates[date]['costs']:
 			byDates[date]['costs'][t] = data['cost']
 		else:
 			byDates[date]['costs'][t] += data['cost']
