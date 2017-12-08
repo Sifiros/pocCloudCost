@@ -1,0 +1,5 @@
+Date,CAU (aka ResourceGroup),Account,Region,Product,Operation,UsageType,Cost
+2017-08-10-16:00,PROD/ProjectA/Frontend,492743234823,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,15
+2017-08-10-17:00,PROD/ProjectA/Frontend,492743234823,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,15
+2017-08-10-18:00,PROD/ProjectA/Frontend,492743234823,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,3
+2017-08-10-19:00,PROD/ProjectA/Frontend,492743234823,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,3
