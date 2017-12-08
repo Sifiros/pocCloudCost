@@ -40,17 +40,6 @@ class GainCalculator():
             'destroy_ebs_volume': [] if islist else None
         })
 
-    def pushEventScope(self, eventType, scope, dateEnd):
-        self.eventScopes.append({
-            'id': scope['id'],
-            'type': eventType,
-            'startDate': scope['startDate'],
-            'endDate': dateEnd,
-            'effectiveDuration': ((dateEnd.timestamp() - scope['startDate'].timestamp()) / 60),
-            'custodianEffective': scope['effective'],
-            'affectedResources': scope['affectedResources']
-        })
-
     # Création des event scopes (start date & endDate liés par un meme type d'event)
     def processEvents(self):
         eventCyclesMapping = {
@@ -97,7 +86,6 @@ class GainCalculator():
             unfinishedEvent = curScopes[scopeId]
             unfinishedEvent['endDate'] = self.endPeriodDate
             self.eventScopes.append(unfinishedEvent)
-
 
     ### Costs
     # Merge des couts de ressource en un total
