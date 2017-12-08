@@ -7,23 +7,37 @@ from dateutil.parser import *
 from datetime import *
 
 class GainCalculator():
+    nextId = 0
     costs = []
     events = []
     endPeriodDate = datetime.now()
 
     eventScopes = []
 
-
     # Constructor
     def __init__(self, costs, events):
         self.costs = costs
         for cost in self.costs:
+            cost["CAU"] = "foo"
+            cost['tagGroup'] = "onch"
             cost['date'] = parse(cost['date'])
             if cost['date'].timestamp() > self.endPeriodDate.timestamp():
                 self.endPeriodDate = cost['date']
+            ##eggreg
+            tot = 0
+            for k in cost['costs']:
+                tot += cost['costs'][k]
+            cost['costs'] = tot
+
         self.events = events
         for event in self.events:
+            event['CAU'] = 'foo'
+            event['id'] = event['date'] + '_' + event['CAU'] + '_' + event['type'] #self.getNewId()
             event['date'] = parse(event['date'])
+
+    def getNewId(self):
+        self.nextId += 1
+        return (self.nextId - 1)
 
     def createEventsDict(self, islist):
         return ({
@@ -33,63 +47,61 @@ class GainCalculator():
             'destroy_ebs_volume': [] if islist else None
         })
 
-    def pushEventScope(self, eventType, scope, dateEnd):
-        self.eventScopes.append({
-            'type': eventType,
-            'startDate': scope['startDate'],
-            'endDate': dateEnd,
-            'effectiveDuration': ((dateEnd.timestamp() - scope['startDate'].timestamp()) / 60),
-            'custodianEffective': scope['effective'],
-            'affectedResources': scope['affectedResources']
-        })
-
     # Création des event scopes (start date & endDate liés par un meme type d'event)
     def processEvents(self):
-        curScopes = self.createEventsDict(False)
+        eventCyclesMapping = {
+            'onoff': ('start_instance', 'shutdown_instance'),
+            'iops': ('increase_iops', 'decrease_iops'),
+            'destroy_ebs_volume': ('destroy_ebs_volume', False),
+            'reserved_instance': ('reserved_instance', False)
+        }
+        curScopes = {}
         for cur in self.events:
-            if cur['type'] == 'shutdown_instance': # associer events aux instanceid
-                if curScopes['onoff'] and curScopes['onoff']['effective'] == False:
-                    self.pushEventScope('onoff', curScopes['onoff'], cur['date'])
-                curScopes['onoff'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}
-            elif cur['type'] == 'start_instance':
-                if curScopes['onoff'] and curScopes['onoff']['effective'] is True:
-                    self.pushEventScope('onoff', curScopes['onoff'], cur['date'])
-                curScopes['onoff'] = {'startDate': cur['date'], 'effective': False, 'affectedResources': cur['affectedResources']}
-            elif cur['type'] == 'modify_ebs_iops':
-                if curScopes['iops']:
-                    self.pushEventScope('iops', curScopes['iops'], cur['date'])
-                curScopes['iops'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}
-            elif cur['type'] == 'destroy_ebs_volume':
-                self.pushEventScope(cur['type'], {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}, self.endPeriodDate)
-            elif cur['type'] == 'reserved_instance':
-                if curScopes['reserved_instance'] and curScopes['reserved_instance']['effective'] == False:
-                    self.pushEventScope('reserved_instance', curScopes['reserved_instance'], cur['date'])
-                curScopes['reserved_instance'] = {'startDate': cur['date'], 'effective': True, 'affectedResources': cur['affectedResources']}
+            newScope = False
+            for cycleType in eventCyclesMapping: # looking for cycle including cur event
+                cycleEvents = eventCyclesMapping[cycleType]
+                if cur['type'] in cycleEvents: # we've found cycle corresponding to this event
+                    cycleId = cycleType + '_' + cur['CAU']
+                    effectiveSavingEvent = cycleEvents[1] == False or cycleEvents[1] == cur['type']
+                    # can't handle 2 successive same event of the same cycle (except for one shot event)
+                    if cycleId in curScopes and curScopes[cycleId]['custodianEffective'] == effectiveSavingEvent:
+                        print("Events processing error : can't handle 2 successive start or end without corresponding start event")
+                        break
 
-        if curScopes['onoff']:
-            self.pushEventScope('onoff', curScopes['onoff'], self.endPeriodDate)
-        if curScopes['iops']:
-            self.pushEventScope('iops', curScopes['iops'], self.endPeriodDate)
-        if curScopes['reserved_instance']:
-            self.pushEventScope('reserved_instance', curScopes['reserved_instance'], self.endPeriodDate)
+                    start = curScopes[cycleId] if cycleId in curScopes else \
+                            ({'startDate': cur['date'], 'custodianEffective': effectiveSavingEvent, 'affectedResources': cur['affectedResources'], 'id': cur['id'], 'type': cycleType, 'CAU': cur['CAU']})
 
-    ### Costs
-    # Merge des couts de ressource en un total
-    def mergeResourceCosts(self, period):
-        for cur in period:
-            tot = 0
-            for resourceCost in cur['costs']:
-                tot += cur['costs'][resourceCost]
-            cur['costs'] = tot
-        return period
+                    if cycleId in curScopes or cycleEvents[1] == False: # we're on an end or one shot event : prepare new scope
+                        newScope = start
+                        newScope['endDate'] = cur['date'] if cycleEvents[1] != False else self.endPeriodDate
+                        if cycleId in curScopes:
+                            del curScopes[cycleId]
+                    # store new cycle start event (not in one shot case)
+                    if cycleEvents[1] != False:
+                        if newScope: # we just ended a cycle : update startDate / endDate
+                            start = dict(newScope)
+                            start['startDate'] = start['endDate']
+                            start['custodianEffective'] = not start['custodianEffective']
+                            start['id'] = cur['id']
+                            del start['endDate']
+                        curScopes[cycleId] = start
+                    break
+            if newScope:
+                self.eventScopes.append(newScope)
+
+        for scopeId in curScopes:
+            unfinishedEvent = curScopes[scopeId]
+            unfinishedEvent['endDate'] = self.endPeriodDate
+            self.eventScopes.append(unfinishedEvent)
 
     # Récupère les event scope matchant date
-    def getMatchingEventTypes(self, date):
+    def getMatchingEventTypes(self, date, CAU):
         eventTypes = [];
         found = False
         for eventScope in self.eventScopes:
             if date.timestamp() >= eventScope['startDate'].timestamp() and \
-               date.timestamp() < eventScope['endDate'].timestamp() and eventScope['custodianEffective']:
+               date.timestamp() < eventScope['endDate'].timestamp() and eventScope['custodianEffective'] and \
+               eventScope['CAU'] == CAU:
                 eventTypes.append(eventScope)
                 found = True
         if found: 
@@ -97,70 +109,65 @@ class GainCalculator():
             return eventTypes
         return False
 
+
+
     # Renvoie chaque event ses metrics de savings pour chaque date ayant un cost
     # Nécessite l'appel préalable de processEvents (création des eventscopes)
     # TODO: -> event scope on off doit sarreter en fin de week
     def getSavings(self):
         costs = list(self.costs)
-        costs = self.mergeResourceCosts(list(costs))
         eventSavings = self.createEventsDict(True)
-        eventScopes = self.createEventsDict(True)
-        lastScopes = [] # scopes applied on last cost metric, required to detect whenever a scope ends before a child one
-        lastCost = costs[0]['costs'] if len(costs) > 0 else 0 # required for scope theorical costs (real cost before a scope beginning)
+        eventScopes = []#self.createEventsDict(True)
+        lastScopes = {} # scopes applied on last cost metric sorted by CAU, required to detect whenever a scope ends before a child one
+        lastCost = {} # required for scope theorical costs (real cost before a scope beginning)
 
         for metric in costs:
+            metricId = metric['CAU'] + metric['tagGroup']
+            if metricId not in lastCost:
+                lastCost[metricId] = metric['costs']
             curDate = metric['date']
-            metric['matchingEventTypes'] = self.getMatchingEventTypes(curDate)
-            eventsApplied = [] # Liste des noms d'event comprenant la date actuelle
-            currentScopes = metric['matchingEventTypes']
+            metric['matchingEventTypes'] = self.getMatchingEventTypes(curDate, metric['CAU'])
+            # eventsApplied = [] # Liste des noms d'event comprenant la date actuelle
+            currentScopes = metric['matchingEventTypes'] if metric['matchingEventTypes'] else []
+            savings = {}
+            i = 0
 
-            if currentScopes != False: # Cout actuel compris dans au moins un scope
-                savings = {}
-                i = 0
-                for curScope in currentScopes:
-                    if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / totalSaving
-                        curScope['theoricalCost'] = lastCost
-                        curScope['totalSaving'] = 0
-                        eventScopes[curScope['type']].append(curScope)
-                    else: # sync theorical costs (in case of parent scope ending)
-                        curScope['theoricalCost'] = lastScopes[i]['theoricalCost']
-                    # Theorical saving between scope theorical cost and current real cost
-                    savings[curScope['type']] = (curScope['theoricalCost'] - metric['costs'])
-                    eventsApplied.append(curScope['type'])
-                    i += 1
+            for curScope in currentScopes:
+                if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / totalSaving
+                    curScope['theoricalCost'] = {}
+                    curScope['totalSaving'] = 0
+                    eventScopes.append(curScope)
 
-                nbScopes = len(currentScopes)
-                for k, v in enumerate(currentScopes):
-                    saving = savings[v['type']]
-                    if k < (nbScopes - 1): # substract next theorical saving for the current real one
-                        saving -= savings[currentScopes[(k + 1)]['type']]
-                    eventSavings[v['type']].append({
-                        'saving': saving,
-                        'date': curDate.isoformat()
-                    })
-                    v['totalSaving'] += saving
-            # Set to 0 every non-applied event's saving for current date
-            for curEvent in eventSavings:
-                if curEvent not in eventsApplied:
-                    eventSavings[curEvent].append({'saving': 0, 'date': curDate.isoformat()})
+                if metricId not in curScope['theoricalCost']: 
+                    curScope['theoricalCost'][metricId] = lastCost[metricId]
+                else: # sync theorical costs (in case of parent scope ending)
+                    curScope['theoricalCost'][metricId] = lastScopes[curScope['CAU']][i]['theoricalCost'][metricId]
+                # Theorical saving between scope theorical cost and current real cost
+                savings[curScope['CAU']] = (curScope['theoricalCost'][metricId] - metric['costs'])
+                # eventsApplied.append(curScope['type'])
+                i += 1
 
-            lastCost = metric['costs']
-            lastScopes = list(currentScopes) if currentScopes != False else []
+            nbScopes = len(currentScopes)
+            for k, v in enumerate(currentScopes):
+                saving = savings[v['CAU']]
+                if k < (nbScopes - 1): # substract next theorical saving for the current real one
+                    saving -= savings[currentScopes[(k + 1)]['CAU']]
+                eventSavings[v['type']].append({
+                    'saving': saving,
+                    'date': curDate.isoformat()
+                })
+                v['totalSaving'] += saving
 
-        for name in eventScopes:
-            eventScopes[name] = list(map(lambda scope: ({
-                "startDate": scope["startDate"].isoformat(),
-                "endDate": scope["endDate"].isoformat(),
-                "totalSaving": scope["totalSaving"]
-            }), eventScopes[name]))
+            lastCost[metricId] = metric['costs']
+            lastScopes[metric['CAU']] = list(currentScopes) if currentScopes != False else []
+
         result = {
             "eventSavings": eventSavings,
             "costs": costs,
-            "eventScopes": eventScopes
+            #"eventScopes": eventScopes
         }
         self.storeToFile(result)
         return result
-
 
     def storeToFile(self, data):
         for cost in data['costs']:
