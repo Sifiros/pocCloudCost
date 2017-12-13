@@ -31,46 +31,152 @@
 
     window.onload = function() {
         registerPlugin('teevityChart');
-        var datasets = Object.keys(datas.eventSavings).map(function(eventName) {
-            return metricsToDataset(eventName, datas.eventSavings[eventName])
+        const eventTypes = datas.eventNames
+        var datasets = []
+        const savings = datas.savings.query({
+            groupBy: ['date', 'type'],
+            mergeWith: ['saving']
         })
-        datasets.push(metricsToDataset('Total costs', datas.costs))
+        var savingDatas = eventTypes.reduce(function (result, cur) {
+            return Object.assign(result, {[cur]: []})
+        }, {})
+        
+        const costs = datas.costs.query({
+            groupBy: ['date'],
+            mergeWith: ['cost', 'saving']
+        })
+        var costDatas = Object.keys(costs).map(function(date) {
+            // On ajoute les bénéfices pour chaque event & pour la même date
+            for (var type of eventTypes) {
+                if (date in savings && type in savings[date]) {
+                    savingDatas[type].push(savings[date][type])
+                } else {
+                    savingDatas[type].push({
+                        date: date,
+                        saving: 0
+                    })
+                }
+            }
+            return costs[date]
+        })
+        datasets.push(metricsToDataset('Total costs', costDatas, 'cost'))
+        // console.log('costs = ' + JSON.stringify(costs))
+        for (var type in savingDatas) {
+            datasets.push(metricsToDataset(type, savingDatas[type]))
+        }
+
+
+
+        // console.log('#> savings : ' + JSON.stringify(savings))
+        // Object.keys(datas.eventSavings).map(function(eventName) {
+        //     return metricsToDataset(eventName, datas.eventSavings[eventName])
+        // })
+
+
         window.chart = new TeevityChart('teevityChart', 'Teevity Savings', datasets)
-        // window.addMockDataset();
         window.chart.refresh();
 
-        function metricsToDataset(datasetName, resources) {
+        function metricsToDataset(datasetName, resources, valueKey = 'saving') {
                 return ({
                     label: datasetName,
                     data: resources.map(function (cur) {
-                        cur.value = (typeof cur.saving != 'undefined' ? cur.saving : cur.costs);
+                        cur.value = cur[valueKey]
                         return cur;
                     }),
                     fill: true
                 });
             }
-            var tabScopes = datas.eventScopes;
-            var tableHead = "<tr><th>startDate</th>";
-            tableHead += "<th>endDate</th>";
-            tableHead += "<th>savings</th></tr></thead><tbody>";
-            var totalEarned = 0;
-            var earnedDuringCurrentCycle;
-            var finalStr = ""
+            // var tabScopes = datas.eventScopes;
+            // var tableHead = "<tr><th>startDate</th>";
+            // tableHead += "<th>endDate</th>";
+            // tableHead += "<th>savings</th></tr></thead><tbody>";
+            // var totalEarned = 0;
+            // var earnedDuringCurrentCycle;
+            // var finalStr = ""
 
-            for (x in tabScopes) {
-                earnedDuringCurrentCycle = 0;
-                var strToAppend = ""
-                tabScopes[x].forEach(function (item) {
-                    totalEarned += item.totalSaving;
-                    earnedDuringCurrentCycle += item.totalSaving;
-                    strToAppend += "<tr><td>" + moment(item.startDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
-                    strToAppend += "<td>" + moment(item.endDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
-                    strToAppend += "<td>" + item.totalSaving + "</td></tr>";
-                });
-                finalStr += "<tr><th scope='row'>" + x + "</th><th></th><th>" + earnedDuringCurrentCycle + "</th></tr>" + strToAppend;
+            // for (x in tabScopes) {
+            //     earnedDuringCurrentCycle = 0;
+            //     var strToAppend = ""
+            //     tabScopes[x].forEach(function (item) {
+            //         totalEarned += item.totalSaving;
+            //         earnedDuringCurrentCycle += item.totalSaving;
+            //         strToAppend += "<tr><td>" + moment(item.startDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
+            //         strToAppend += "<td>" + moment(item.endDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
+            //         strToAppend += "<td>" + item.totalSaving + "</td></tr>";
+            //     });
+            //     finalStr += "<tr><th scope='row'>" + x + "</th><th></th><th>" + earnedDuringCurrentCycle + "</th></tr>" + strToAppend;
+            // }
+            // finalStr = "<thead><tr><td><b>" + "The total amount of Savings in this period is " + totalEarned + "</b></td></tr>" + tableHead + finalStr + "</tbody>";
+
+            // $('#dataTable').append(finalStr);
+    }
+
+    Array.prototype.query = function(opts = {}) {
+        var where = opts.where || false
+        var mergeWith = opts.mergeWith || false
+        var groupBy = opts.groupBy || false
+        var tab = this
+
+        if (where) {
+            var tab = execWhere(tab, where)
+        }
+        if (groupBy) {
+            var tab = execGroupBy(tab, groupBy)
+        } else if (mergeWith) {
+            var tab = execMerge(tab, mergeWith)
+        }
+        return  tab
+
+        function execWhere(tab, where) {
+            return tab.filter(function(cur) {
+                return Object.keys(where).every(function(key) {
+                    return  tab[key] == where[key]
+                })
+            })
+        }
+        function execMerge(tab, mergeWith) {
+            return tab.slice(1).reduce(function(merge, current) {
+                for (key in mergeWith)
+                    merge[key] += current[key]
+                return merge
+            }, tab[0])
+        }
+        function execGroupBy(tab, groupBy) {
+            var groups = {}
+            var everyContainers = {}//groupBy.length == 1 ? groups : {}
+
+            for (var row of tab) {
+                var curLvl = groups
+                var id = ""
+                for (var i = 0; i < groupBy.length; i++) {
+                    const end = (i == (groupBy.length - 1))
+                    var name = row[(groupBy[i])]
+                    id += name
+                    if (!(name in curLvl)) {
+                        curLvl[name] = end ? [] : {}
+                    }
+                    if (!end) {
+                        curLvl = curLvl[name]
+                    } else {
+                        if (!(id in everyContainers))
+                            everyContainers[id] = curLvl
+                        curLvl[name].push(row)
+                    }
+                }
             }
-            finalStr = "<thead><tr><td><b>" + "The total amount of Savings in this period is " + totalEarned + "</b></td></tr>" + tableHead + finalStr + "</tbody>";
 
-            $('#dataTable').append(finalStr);
+            // Apply merge
+            if (mergeWith) {
+                for (key in everyContainers) {
+                    for (key2 in everyContainers[key]) {
+                        if (everyContainers[key][key2] instanceof Array) {
+                            // console.log('#> gonna merge ' + key2 + ' = ' + JSON.stringify(everyContainers[key][key2]))
+                            everyContainers[key][key2] = execMerge(everyContainers[key][key2], mergeWith)
+                        }
+                    }
+                }
+            }
+            return groups
+        }
     }
 </script>
