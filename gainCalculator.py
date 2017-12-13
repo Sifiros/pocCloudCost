@@ -115,13 +115,18 @@ class GainCalculator():
     # Nécessite l'appel préalable de processEvents (création des eventscopes)
     # TODO: -> event scope on off doit sarreter en fin de week
     def getSavings(self):
+        # sortie de la fonction : 
+        result = { 
+            "savings": [],
+            "costs": [],
+            "eventScopes": []
+        }
         costs = list(self.costs)
-        eventSavings = self.createEventsDict(True)
-        eventScopes = []#self.createEventsDict(True)
         lastScopes = {} # scopes applied on last cost metric sorted by CAU, required to detect whenever a scope ends before a child one
         lastCost = {} # required for scope theorical costs (real cost before a scope beginning)
 
         for metric in costs:
+            metric['saving'] = 0 # contiendra le total de bénéfice de tous les event scopes s'y appliquant
             metricId = metric['CAU'] + metric['tagGroup']
             if metricId not in lastCost:
                 lastCost[metricId] = metric['costs']
@@ -129,51 +134,64 @@ class GainCalculator():
             metric['matchingEventTypes'] = self.getMatchingEventTypes(curDate, metric['CAU'])
             # eventsApplied = [] # Liste des noms d'event comprenant la date actuelle
             currentScopes = metric['matchingEventTypes'] if metric['matchingEventTypes'] else []
-            savings = {}
+            curSavings = {}
             i = 0
 
             for curScope in currentScopes:
-                if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / totalSaving
+                if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / saving
                     curScope['theoricalCost'] = {}
-                    curScope['totalSaving'] = 0
-                    eventScopes.append(curScope)
+                    curScope['saving'] = 0
+                    result['eventScopes'].append(curScope)
 
                 if metricId not in curScope['theoricalCost']: 
                     curScope['theoricalCost'][metricId] = lastCost[metricId]
                 else: # sync theorical costs (in case of parent scope ending)
                     curScope['theoricalCost'][metricId] = lastScopes[curScope['CAU']][i]['theoricalCost'][metricId]
                 # Theorical saving between scope theorical cost and current real cost
-                savings[curScope['CAU']] = (curScope['theoricalCost'][metricId] - metric['costs'])
-                # eventsApplied.append(curScope['type'])
+                curSavings[curScope['CAU']] = (curScope['theoricalCost'][metricId] - metric['costs'])
                 i += 1
 
             nbScopes = len(currentScopes)
             for k, v in enumerate(currentScopes):
-                saving = savings[v['CAU']]
+                saving = curSavings[v['CAU']]
                 if k < (nbScopes - 1): # substract next theorical saving for the current real one
-                    saving -= savings[currentScopes[(k + 1)]['CAU']]
-                eventSavings[v['type']].append({
-                    'saving': saving,
-                    'date': curDate.isoformat()
+                    saving -= curSavings[currentScopes[(k + 1)]['CAU']]
+                # saving = bénéfice de l'eventScope pour le costMetric actuel
+                result['savings'].append({
+                    'CAU': v['CAU'],
+                    'tagGroup': metric['tagGroup'],
+                    'date': curDate.isoformat(),
+                    'type': v['type'],
+                    'saving': saving
                 })
-                v['totalSaving'] += saving
+                # v['saving'] = Bénéfice total de l'eventScope appliqué à tous les costMetric de même CAU
+                v['saving'] += saving
+                # bénéfice de tous les scopes appliqués au costMetric actuel
+                metric['saving'] += saving
+
+            result['costs'].append({
+                'CAU': metric['CAU'],
+                'tagGroup': metric['tagGroup'],
+                'date': curDate.isoformat(),
+                'cost': metric['costs'],
+                'matchingEventTypes': False if not metric['matchingEventTypes'] else True,
+                'saving': metric['saving']
+            })
 
             lastCost[metricId] = metric['costs']
             lastScopes[metric['CAU']] = list(currentScopes) if currentScopes != False else []
 
-        result = {
-            "eventSavings": eventSavings,
-            "costs": costs,
-            #"eventScopes": eventScopes
-        }
+        result['eventScopes']  = list(map(lambda scope: ({
+            'startDate': scope['startDate'].isoformat(),
+            'endDate': scope['endDate'].isoformat(),
+            'type': scope['type'],
+            'CAU': scope['CAU'],
+            'saving': scope['saving']
+        }), result['eventScopes']))
         self.storeToFile(result)
         return result
 
     def storeToFile(self, data):
-        for cost in data['costs']:
-            cost['matchingEventTypes'] = False if not cost['matchingEventTypes'] else True
-            cost['date'] = cost['date'].isoformat()
-
         with open('./ui/eventSavings.json', 'w') as fileToWrite:
             fileToWrite.write('datas = ' + json.dumps(data))
         fileToWrite.close()
