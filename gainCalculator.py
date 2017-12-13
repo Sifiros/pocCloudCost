@@ -119,7 +119,8 @@ class GainCalculator():
         result = { 
             "savings": [],
             "costs": [],
-            "eventScopes": []
+            "eventScopes": [],
+            "eventNames": []
         }
         costs = list(self.costs)
         lastScopes = {} # scopes applied on last cost metric sorted by CAU, required to detect whenever a scope ends before a child one
@@ -132,13 +133,14 @@ class GainCalculator():
                 lastCost[metricId] = metric['costs']
             curDate = metric['date']
             metric['matchingEventTypes'] = self.getMatchingEventTypes(curDate, metric['CAU'])
-            # eventsApplied = [] # Liste des noms d'event comprenant la date actuelle
             currentScopes = metric['matchingEventTypes'] if metric['matchingEventTypes'] else []
             curSavings = {}
             i = 0
 
             for curScope in currentScopes:
                 if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / saving
+                    if curScope['type'] not in result['eventNames']:
+                        result['eventNames'].append(curScope['type'])
                     curScope['theoricalCost'] = {}
                     curScope['saving'] = 0
                     result['eventScopes'].append(curScope)
@@ -148,14 +150,14 @@ class GainCalculator():
                 else: # sync theorical costs (in case of parent scope ending)
                     curScope['theoricalCost'][metricId] = lastScopes[curScope['CAU']][i]['theoricalCost'][metricId]
                 # Theorical saving between scope theorical cost and current real cost
-                curSavings[curScope['CAU']] = (curScope['theoricalCost'][metricId] - metric['costs'])
+                curSavings[curScope['type']] = (curScope['theoricalCost'][metricId] - metric['costs'])
                 i += 1
 
             nbScopes = len(currentScopes)
             for k, v in enumerate(currentScopes):
-                saving = curSavings[v['CAU']]
+                saving = curSavings[v['type']]
                 if k < (nbScopes - 1): # substract next theorical saving for the current real one
-                    saving -= curSavings[currentScopes[(k + 1)]['CAU']]
+                    saving -= curSavings[currentScopes[(k + 1)]['type']]
                 # saving = bénéfice de l'eventScope pour le costMetric actuel
                 result['savings'].append({
                     'CAU': v['CAU'],
