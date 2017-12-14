@@ -143,6 +143,9 @@ function generate(form) {
                     savings.onoff = (curCost * form.reductionWeekOnOff)
                 }
             }
+        } else if (form.endDateOnOff && cur.isSame(form.endDateOnOff) && !onOffStatus) {
+            addEvent(cur, 'start_instance')
+            onOffStatus = false
         }
 
         // IOPS
