@@ -115,7 +115,7 @@ function generate(form) {
     var curCost = form.startCost;
     var riApplied = false;
     var onOffStatus = true;
-    var iopsStatus = false;
+    var iopsStatus = true;
     var savings = {
         onoff: 0,
         iops: 0

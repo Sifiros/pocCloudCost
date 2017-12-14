@@ -136,7 +136,6 @@ class GainCalculator():
             currentScopes = currentSavingCycles if currentSavingCycles else []
             curSavings = {}
             i = 0
-
             for curScope in currentScopes:
                 if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / saving
                     if curScope['type'] not in result['eventNames']:
@@ -157,6 +156,8 @@ class GainCalculator():
             for k, v in enumerate(currentScopes):
                 saving = curSavings[v['type']]
                 if k < (nbScopes - 1): # substract next theorical saving for the current real one
+                    if curDate.isoformat() == '2017-12-14T23:00:00+00:00':
+                        print(v['type'] + " has saving of " + str(saving) + ". GONNA SUBTRACT " + str(curSavings[currentScopes[(k + 1)]['type']]))
                     saving -= curSavings[currentScopes[(k + 1)]['type']]
                 # saving = bénéfice de l'eventScope pour le costMetric actuel
                 result['savings'].append({
