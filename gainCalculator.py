@@ -25,7 +25,6 @@ class GainCalculator():
 
         self.events = events
         for event in self.events:
-            event['CAU'] = 'foo'
             event['id'] = event['type'] + '_' + event['date'] + '_' + event['CAU']
             event['date'] = parse(event['date'])
 
