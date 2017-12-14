@@ -23,7 +23,6 @@ class GainCalculator():
             cost['date'] = parse(cost['date'])
             if cost['date'].timestamp() > self.endPeriodDate.timestamp():
                 self.endPeriodDate = cost['date']
-            ##eggreg
             tot = 0
             for k in cost['costs']:
                 tot += cost['costs'][k]
@@ -32,12 +31,8 @@ class GainCalculator():
         self.events = events
         for event in self.events:
             event['CAU'] = 'foo'
-            event['id'] = event['date'] + '_' + event['CAU'] + '_' + event['type'] #self.getNewId()
+            event['id'] = event['type'] + '_' + event['date'] + '_' + event['CAU']
             event['date'] = parse(event['date'])
-
-    def getNewId(self):
-        self.nextId += 1
-        return (self.nextId - 1)
 
     def createEventsDict(self, islist):
         return ({
@@ -119,7 +114,7 @@ class GainCalculator():
         result = { 
             "savings": [],
             "costs": [],
-            "eventScopes": [],
+            "savingCycles": [],
             "eventNames": []
         }
         costs = list(self.costs)
@@ -142,7 +137,7 @@ class GainCalculator():
                         result['eventNames'].append(curScope['type'])
                     curScope['theoricalCost'] = {}
                     curScope['saving'] = 0
-                    result['eventScopes'].append(curScope)
+                    result['savingCycles'].append(curScope)
 
                 if metricId not in curScope['theoricalCost']: 
                     curScope['theoricalCost'][metricId] = lastCost[metricId]
@@ -163,7 +158,8 @@ class GainCalculator():
                     'tagGroup': costAndUsageDataItem['tagGroup'],
                     'date': curDate.isoformat(),
                     'type': v['type'],
-                    'saving': saving
+                    'saving': saving,
+                    'savingCycleId': v['id'], # On associe l'id du saving cycle au costItem
                 })
                 # v['saving'] = Bénéfice total de l'eventScope appliqué à tous les costMetric de même CAU
                 v['saving'] += saving
@@ -182,13 +178,14 @@ class GainCalculator():
             lastCost[metricId] = costAndUsageDataItem['costs']
             lastScopes[costAndUsageDataItem['CAU']] = list(currentScopes) if currentScopes != False else []
 
-        result['eventScopes']  = list(map(lambda scope: ({
+        result['savingCycles']  = list(map(lambda scope: ({
             'startDate': scope['startDate'].isoformat(),
             'endDate': scope['endDate'].isoformat(),
             'type': scope['type'],
             'CAU': scope['CAU'],
-            'saving': scope['saving']
-        }), result['eventScopes']))
+            'saving': scope['saving'],
+            'id': scope['id']
+        }), result['savingCycles']))
         self.storeToFile(result)
         return result
 
