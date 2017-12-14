@@ -13,6 +13,12 @@ angular.module('app')
         endDateRI: false,
         reductionRI: 50,
 
+        dateIops: false,
+        endDateIops: false,
+        reductionIops: 15,
+        timeIncreaseIops: 9,
+        timeDecreaseIops: 21,
+
         dateOnOff: false,
         endDateOnOff: false,
         reductionWeekOnOff: 30,
@@ -34,18 +40,24 @@ angular.module('app')
 
         $('#endDateRI').datepicker()
         .on('changeDate', function(e) { $scope.form.endDateRI = moment(e.target.value, "MM/DD/YYYY").toISOString() })
-
         $('#dateOnOff').datepicker()
         .on('changeDate', function(e) { $scope.form.dateOnOff = moment(e.target.value, "MM/DD/YYYY").toISOString() })
 
         $('#endDateOnOff').datepicker()
         .on('changeDate', function(e) { $scope.form.endDateOnOff = moment(e.target.value, "MM/DD/YYYY").toISOString() })
+
+        $('#dateIncreaseIops').datepicker()
+        .on('changeDate', function(e) { $scope.form.dateIops = moment(e.target.value, "MM/DD/YYYY").toISOString() })
+
+        $('#dateDecreaseIops').datepicker()
+        .on('changeDate', function(e) { $scope.form.endDateIops = moment(e.target.value, "MM/DD/YYYY").toISOString() })
     }
 
     $scope.onValid = (e) => {
         console.log('generate with ' + JSON.stringify($scope.form))
         var form = {...$scope.form}
         form.reductionRI /= 100.0
+        form.reductionIops /= 100.0
         form.reductionWeekOnOff = form.reductionWeekOnOff / 100.0
         form.reductionWeekEndOnOff = form.reductionWeekEndOnOff / 100.0
 
@@ -83,8 +95,10 @@ function generate(form) {
     var curCost = form.startCost
     var riApplied = false
     var onOffStatus = true
+    var iopsStatus = false
     var savings = {
-        onoff: 0
+        onoff: 0,
+        iops: 0
     }
 
     var cur = moment(form.startDate)
@@ -96,8 +110,11 @@ function generate(form) {
             addEvent(cur, 'reserved_instance');
         }
         savings = {
-            "onoff" : 0
+            "onoff" : 0,
+            "iops": 0
         }
+
+        // OffOn
         if (form.dateOnOff && cur.isSameOrAfter(form.dateOnOff) &&
             (!form.endDateOnOff || cur.isBefore(form.endDateOnOff))) {
             var curShutdownDate = moment(cur).hour(form.timeOffWeek)
@@ -128,8 +145,30 @@ function generate(form) {
             }
         }
 
+        // IOPS
+        if (form.dateIops && cur.isSameOrAfter(form.dateIops) &&
+            (!form.endDateIops || cur.isBefore(form.endDateIops))) {
+            var curDecreaseDate = moment(cur).hour(form.timeDecreaseIops)
+            var curIncreaseDate = moment(cur).hour(form.timeIncreaseIops)
+            var day = cur.day();
+
+            if (cur.isBetween(curIncreaseDate, curDecreaseDate)) { // En journée , on augmente les iops
+                if (!iopsStatus) {
+                    addEvent(cur, 'increase_iops')
+                    iopsStatus = true
+                }
+                savings.iops = 0
+            } else if (!cur.isBetween(curIncreaseDate, curDecreaseDate)) { // Hors journée, on diminue les iops
+                if (iopsStatus) {
+                    addEvent(cur, 'decrease_iops')
+                    iopsStatus = false
+                }
+                savings.iops = (curCost * form.reductionIops)
+            }
+        }
+
         costs.push({
-            costs: {ec2: (curCost - savings.onoff)},
+            costs: {ec2: (curCost - savings.onoff - savings.iops)},
             date: cur.toISOString()
         })
         cur.add(1, 'hours')

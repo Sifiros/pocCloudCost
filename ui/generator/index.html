@@ -30,7 +30,15 @@ Date de fin : <input type="text" class="form-control" id="endDateOnOff" style="d
 Réduction semaine (pourcentage) : <input type="number" ng-model="form.reductionWeekOnOff" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
 Réduction week-end (pourcentage) : <input type="number" ng-model="form.reductionWeekEndOnOff" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
 Heure de ON en semaine : <input type="number" ng-model="form.timeOnWeek" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
-Heure de OFF en semaine : <input type="number" ng-model="form.timeOffWeek" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
+Heure de OFF en semaine : <input type="number" ng-model="form.timeOffWeek" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br /> <br /> <br />
+
+
+<h4>IOPS Increase / Decrease</h4>
+Date de début : <input type="text" class="form-control" id="dateIncreaseIops" style="display: inline-block; width: 200px;"> <br />
+Date de fin : <input type="text" class="form-control" id="dateDecreaseIops" style="display: inline-block; width: 200px;"> <br />
+Réduction (pourcentage) : <input type="number" ng-model="form.reductionIops" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
+Heure d'augmentation des IOPS : <input type="number" ng-model="form.timeIncreaseIops" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
+Heure de diminution : <input type="number" ng-model="form.timeDecreaseIops" class="form-control " id="period" style="display: inline-block; width: 200px;"> <br />
 
 <br /><br /> <br />
 <button type='submit' class='btn btn-primary'>Générer</button>

@@ -31,12 +31,12 @@ def getDatesDict(period):
 	for cur in period:
 		if cur['matchingEventTypes'] == False:
 			lastUnoptimized = cur
-			unoptimized = cur['costs']
+			unoptimized = cur['cost']
 		else:
-			unoptimized = lastUnoptimized['costs']
+			unoptimized = lastUnoptimized['cost']
 		byDates[cur['date']] = {
 			"unoptimized": unoptimized,
-			"cost": cur['costs'],
+			"cost": cur['cost'],
 			"hasEvent": cur['matchingEventTypes'],
 			"savings": {},
 			"totalSaving": 0
@@ -52,21 +52,21 @@ def gatherDatas(costs, eventSavings):
 		"totalSaving": 0
 	}
 
-	for eventType in eventSavings:
-		for event in eventSavings[eventType]:
-			date = event['date']
-			# Filling cur date savings
-			dates[date]['savings'][eventType] = event['saving']
-			dates[date]['totalSaving'] += event['saving']
-			# Adding to summary
-			summary['costs'] += dates[date]['cost']
-			summary['totalSaving'] += event['saving']
-			if eventType not in summary['savings']:
-				summary['savings'][eventType] = event['saving']
-				summary['eventsApplyCounter'][eventType] = (1 if event['saving'] > 0 else 0)
-			else:
-				summary['savings'][eventType] += event['saving']
-				summary['eventsApplyCounter'][eventType] += (1 if event['saving'] > 0 else 0)
+	for event in eventSavings:
+		date = event['date']
+		eventType = event['type']
+		# Filling cur date savings
+		dates[date]['savings'][eventType] = event['saving']
+		dates[date]['totalSaving'] += event['saving']
+		# Adding to summary
+		summary['costs'] += dates[date]['cost']
+		summary['totalSaving'] += event['saving']
+		if eventType not in summary['savings']:
+			summary['savings'][eventType] = event['saving']
+			summary['eventsApplyCounter'][eventType] = (1 if event['saving'] > 0 else 0)
+		else:
+			summary['savings'][eventType] += event['saving']
+			summary['eventsApplyCounter'][eventType] += (1 if event['saving'] > 0 else 0)
 
 	return {
 		"dates": dates,
@@ -97,7 +97,7 @@ def lookForInconsistencies(dates):
 
 def main():
 	datas = json.loads(sys.stdin.read())
-	events = datas['eventSavings']
+	events = datas['savings']
 	costs = datas['costs']
 	period = getPeriod(costs)
 	freq = round((len(costs) / (period['duration'] * 24)))
