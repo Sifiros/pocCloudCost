@@ -95,7 +95,7 @@ class GainCalculator():
             self.eventScopes.append(unfinishedEvent)
 
     # Récupère les event scope matchant date
-    def getMatchingEventTypes(self, date, CAU):
+    def getCurrentSavingCycles(self, date, CAU):
         eventTypes = [];
         found = False
         for eventScope in self.eventScopes:
@@ -126,14 +126,14 @@ class GainCalculator():
         lastScopes = {} # scopes applied on last cost metric sorted by CAU, required to detect whenever a scope ends before a child one
         lastCost = {} # required for scope theorical costs (real cost before a scope beginning)
 
-        for metric in costs:
-            metric['saving'] = 0 # contiendra le total de bénéfice de tous les event scopes s'y appliquant
-            metricId = metric['CAU'] + metric['tagGroup']
+        for costAndUsageDataItem in costs:
+            costAndUsageDataItem['saving'] = 0 # contiendra le total de bénéfice de tous les event scopes s'y appliquant
+            metricId = costAndUsageDataItem['CAU'] + costAndUsageDataItem['tagGroup']
             if metricId not in lastCost:
-                lastCost[metricId] = metric['costs']
-            curDate = metric['date']
-            metric['matchingEventTypes'] = self.getMatchingEventTypes(curDate, metric['CAU'])
-            currentScopes = metric['matchingEventTypes'] if metric['matchingEventTypes'] else []
+                lastCost[metricId] = costAndUsageDataItem['costs']
+            curDate = costAndUsageDataItem['date']
+            currentSavingCycles = self.getCurrentSavingCycles(curDate, costAndUsageDataItem['CAU'])
+            currentScopes = currentSavingCycles if currentSavingCycles else []
             curSavings = {}
             i = 0
 
@@ -150,7 +150,7 @@ class GainCalculator():
                 else: # sync theorical costs (in case of parent scope ending)
                     curScope['theoricalCost'][metricId] = lastScopes[curScope['CAU']][i]['theoricalCost'][metricId]
                 # Theorical saving between scope theorical cost and current real cost
-                curSavings[curScope['type']] = (curScope['theoricalCost'][metricId] - metric['costs'])
+                curSavings[curScope['type']] = (curScope['theoricalCost'][metricId] - costAndUsageDataItem['costs'])
                 i += 1
 
             nbScopes = len(currentScopes)
@@ -161,7 +161,7 @@ class GainCalculator():
                 # saving = bénéfice de l'eventScope pour le costMetric actuel
                 result['savings'].append({
                     'CAU': v['CAU'],
-                    'tagGroup': metric['tagGroup'],
+                    'tagGroup': costAndUsageDataItem['tagGroup'],
                     'date': curDate.isoformat(),
                     'type': v['type'],
                     'saving': saving
@@ -169,19 +169,19 @@ class GainCalculator():
                 # v['saving'] = Bénéfice total de l'eventScope appliqué à tous les costMetric de même CAU
                 v['saving'] += saving
                 # bénéfice de tous les scopes appliqués au costMetric actuel
-                metric['saving'] += saving
+                costAndUsageDataItem['saving'] += saving
 
             result['costs'].append({
-                'CAU': metric['CAU'],
-                'tagGroup': metric['tagGroup'],
+                'CAU': costAndUsageDataItem['CAU'],
+                'tagGroup': costAndUsageDataItem['tagGroup'],
                 'date': curDate.isoformat(),
-                'cost': metric['costs'],
-                'matchingEventTypes': False if not metric['matchingEventTypes'] else True,
-                'saving': metric['saving']
+                'cost': costAndUsageDataItem['costs'],
+                'matchingEventTypes': False if not currentSavingCycles else True,
+                'saving': costAndUsageDataItem['saving']
             })
 
-            lastCost[metricId] = metric['costs']
-            lastScopes[metric['CAU']] = list(currentScopes) if currentScopes != False else []
+            lastCost[metricId] = costAndUsageDataItem['costs']
+            lastScopes[costAndUsageDataItem['CAU']] = list(currentScopes) if currentScopes != False else []
 
         result['eventScopes']  = list(map(lambda scope: ({
             'startDate': scope['startDate'].isoformat(),
