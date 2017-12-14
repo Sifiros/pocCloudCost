@@ -40,10 +40,10 @@ class GainCalculator():
     # Création des event scopes (start date & endDate liés par un meme type d'event)
     def processEvents(self):
         eventCyclesMapping = {
-            'offon': ('start_instance', 'shutdown_instance'),
+            'offon': ('reStart', 'Shutdown'),
             'iops': ('increase_iops', 'decrease_iops'),
             'destroy_ebs_volume': ('destroy_ebs_volume', False),
-            'reserved_instance': ('reserved_instance', False)
+            'reserved_instance': ('RIStart', False)
         }
         curScopes = {}
         for cur in self.events:
@@ -59,7 +59,7 @@ class GainCalculator():
                         break
 
                     start = curScopes[cycleId] if cycleId in curScopes else \
-                            ({'startDate': cur['date'], 'custodianEffective': effectiveSavingEvent, 'affectedResources': cur['affectedResources'], 'id': cur['id'], 'type': cycleType, 'CAU': cur['CAU']})
+                            ({'startDate': cur['date'], 'custodianEffective': effectiveSavingEvent, 'id': cur['id'], 'type': cycleType, 'CAU': cur['CAU']})
 
                     if cycleId in curScopes or cycleEvents[1] == False: # we're on an end or one shot event : prepare new scope
                         newScope = start
