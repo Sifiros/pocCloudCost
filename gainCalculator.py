@@ -41,7 +41,7 @@ class GainCalculator():
 
     def createEventsDict(self, islist):
         return ({
-            'onoff': [] if islist else None,
+            'offon': [] if islist else None,
             'iops': [] if islist else None,
             'reserved_instance': [] if islist else None,
             'destroy_ebs_volume': [] if islist else None
@@ -50,7 +50,7 @@ class GainCalculator():
     # Création des event scopes (start date & endDate liés par un meme type d'event)
     def processEvents(self):
         eventCyclesMapping = {
-            'onoff': ('start_instance', 'shutdown_instance'),
+            'offon': ('start_instance', 'shutdown_instance'),
             'iops': ('increase_iops', 'decrease_iops'),
             'destroy_ebs_volume': ('destroy_ebs_volume', False),
             'reserved_instance': ('reserved_instance', False)
