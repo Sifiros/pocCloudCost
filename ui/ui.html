@@ -110,7 +110,7 @@
                         earnedDuringCurrentCAU += item.saving;
                         strToAppend += "<tr><td>" + moment(item.startDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
                         strToAppend += "<td>" + moment(item.endDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
-                        strToAppend += "<td>" + "MON SUPER ID" + "</td>";
+                        strToAppend += "<td>" + item.id + "</td>";
                         strToAppend += "<td>" + item.saving + "</td></tr>";
                     });
                     strToAppend = "<tr><th scope='row'>" + "CAU : " + costAllocationUnit + "</th><th></th><th></th><th>" +
