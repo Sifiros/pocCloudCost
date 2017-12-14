@@ -8,23 +8,23 @@ from os import system
 import random
 
 fname = "teevity_savings.csv"
-exemple = {'Account': '492743234823', 'Region': 'eu-west-1', 'UsageType': 'm4.2xlarge', \
-           'Product': 'ec2_instance', 'Cost': '3', 'Date': '2017-08-10-19:00', 'Operation': 'Reserved', \
-           'CAU (aka ResourceGroup)': 'PROD/ProjectA/Frontend'}
+efname = "teevity_events.csv"
 
 CAUs = ['PROD/ProjectA/Fontend', 'PROD/ProjectA/Backend', 'PROD/ProjectB/Fontend', 'PROD/ProjectB/Backend', \
         'DEV/ProjectA/Fontend', 'DEV/ProjectA/Backend', 'DEV/ProjectB/Fontend', 'DEV/ProjectB/Backend']
 
 iteration_number = 1000
 account = '492743284828'
-startDate = '2017-08-10-00:00'
+startDate = '2017-08-10-12:00'
 region = 'eu-west-1'
 usageCost = {'m4.2xlarge' : 8.0, 'bytes-out': 0.3, 'r3.8xlarge': 80.0, 't2.micro' : 0.1}
 operation =  ['Reserved', 'OnDemand']
+eventType = {'Ri': 'RIStart', 'start': 'reStart', 'shut' : 'Shutdown'}
 
 #random.randrange(start, stop, step)
 def get_object_list():
-    rowList = [] 
+    rowList = []
+    usedCAUList = []
     for x in usageCost:
         newRow = {'Account':account, 'Region':region}
         newRow['UsageType'] = x
@@ -36,63 +36,77 @@ def get_object_list():
             newRow['Operation'] = operation[1]
             newRow['Product'] = 'ec2_instance'
             newRow['CAU'] = CAUs[random.randrange(0, 8, 1)]
+            usedCAUList.append(newRow['CAU'])
             if x == 'm4.2xlarge':
                 rowList.append(newRow)
                 rowList.append(newRow)
             rowList.append(newRow)
-    return rowList
+    CAUListSet = set(usedCAUList)
+    return rowList, CAUListSet
 
-def start_writing(filename, fieldnames):
+def start_writing(filename, fieldnames, event_filename, event_fieldnames):
     with open(filename, 'a+') as wfile:
-        i = 0
+        event_file = open(event_filename, 'a+')
+        event_writer = csv.DictWriter(event_file, event_fieldnames)
         writer = csv.DictWriter(wfile, fieldnames)
-        rowList = get_object_list()
+        rowList, usedCauSet = get_object_list()
         currentTime = parse(startDate)
 
+        i = 0
         while i < iteration_number:
+            isRIAlreadyTriggered = False
+            isShutDownAlreadyTriggered = False
+            isReStartAlreadyTriggered = False
+
             for currentRow in rowList:
                 currentRow['Date'] = currentTime.isoformat()
+
+                # Trigger and write RI event
                 if i == (iteration_number) / 2:
                     currentRow['Operation'] = operation[0]
                     currentRow['Cost'] = currentRow['Cost'] * 0.5
+                    if isRIAlreadyTriggered == False:
+                        isRIAlreadyTriggered = True
+                        for CAUType in usedCauSet:
+                            eventRow = {'Date' : currentTime.isoformat(), 'CAU': CAUType, 'Type': eventType['Ri']}
+                            event_writer.writerow(eventRow)
+
+                # Trigger and write ShutDown event
+                if currentRow['UsageType'] == 'm4.2xlarge' and currentTime.hour == 19:
+                    currentRow['Cost'] = currentRow['Cost'] * 0.70
+                    if isShutDownAlreadyTriggered == False:
+                        isShutDownAlreadyTriggered = True
+                        eventRow = {'Date' : currentTime.isoformat(), 'CAU': currentRow['CAU'], 'Type': eventType['shut']}
+                        event_writer.writerow(eventRow)
+
+                # Trigger and write ReStart event
+                if currentRow['UsageType'] == 'm4.2xlarge' and currentTime.hour == 8:
+                    currentRow['Cost'] = usageCost['m4.2xlarge']
+                    if isReStartAlreadyTriggered == False:
+                        isReStartAlreadyTriggered = True
+                        eventRow = {'Date' : currentTime.isoformat(), 'CAU': currentRow['CAU'], 'Type': eventType['start']}
+                        event_writer.writerow(eventRow)
+
+                # Some Cost randomization                       
                 currentRow['Cost'] = currentRow['Cost'] * random.uniform(0.9, 1.1)
                 writer.writerow(currentRow)
 
             currentTime += timedelta(hours=1)
             i += 1
 
-#    for x in usageCost:
-#        print(x)
-#        print(usageCost[x])
-#        while i < iteration_number:
-#            usageRand = random.randrange(0, 3, 1)
-#            for j, x in enumerate(usageCost):
-#                print("enumerate => {}".format(j))
-#                if j == usageRand:
-#                    newRow['UsageType'] = x
-#                    newRow['Cost'] = usageCost[x]
-#                    if x == 'bytes-out':
-#                        newRow['Operation'] = 'datatransfert'
-#                        newRow['Product'] = 'ec2'
-#                    else:
-#                        newRow['Operation'] = operation[(usageRand + 1) % 2]
-#                        newRow['Product'] = 'ec2_instance'
-#            CAURand = random.randrange(0, 8, 1)
-#            newRow['CAU'] = CAUs[CAURand]
-#            if ((random.random() * 100) % 3) == 0:
-#                currentTime += timedelta(hours=1)
-#            newRow['Date'] = currentTime.isoformat()
-#            i = i + 1
-
 file = open(fname, "rb")
+ev_file = open(efname, "rb")
 random.seed(None)
+
 ret = system("cp ./save.csv ./teevity_savings.csv")
-if ret == 0:
+ret2 = system("cp ./save_events.csv ./teevity_events.csv")
+if ret == 0 and ret2 == 0:
     try:
         reader = csv.DictReader(file)
+        event_reader = csv.DictReader(ev_file)
         fieldnames = reader.fieldnames
-        print("tab identifiers => {}".format(fieldnames))
-        print("")
+        event_fieldnames = event_reader.fieldnames
     finally:
         file.close()
-        start_writing(fname, fieldnames)
+        ev_file.close()
+        start_writing(fname, fieldnames, efname, event_fieldnames)

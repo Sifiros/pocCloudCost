@@ -1,6 +1,0 @@
-,Events,,,,,,,t
-,Date,CAU,Type,,,,,
-,2017-08-10-18:00,PROD/ProjectA/Frontend,Shutdown,,,,,
-,2017-08-11-08:00,PROD/ProjectA/Frontend,Start,,,,,
-,2017-08-10-18:00,PROD/ProjectA/DB,ReducePIOPS,,,,,
-,2017-08-11-08:00,PROD/ProjectA/DB,ReupPIOPS,,,,,
