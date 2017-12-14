@@ -95,7 +95,7 @@ function generate(form) {
     var curCost = form.startCost
     var riApplied = false
     var onOffStatus = true
-    var iopsStatus = false
+    var iopsStatus = true
     var savings = {
         onoff: 0,
         iops: 0
@@ -143,6 +143,9 @@ function generate(form) {
                     savings.onoff = (curCost * form.reductionWeekOnOff)
                 }
             }
+        } else if (form.endDateOnOff && cur.isSame(form.endDateOnOff) && !onOffStatus) {
+            addEvent(cur, 'start_instance')
+            onOffStatus = false
         }
 
         // IOPS

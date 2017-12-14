@@ -136,7 +136,6 @@ class GainCalculator():
             currentScopes = currentSavingCycles if currentSavingCycles else []
             curSavings = {}
             i = 0
-
             for curScope in currentScopes:
                 if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / saving
                     if curScope['type'] not in result['eventNames']:
