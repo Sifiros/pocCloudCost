@@ -12,8 +12,8 @@ def printEventTypeFromSavings(savings):
         print(' SAVING = ' + str(saving))
 
 def main():
-    costsFilepath = sys.argv[1] if len(sys.argv) > 1 else "./api/costs.csv"
-    eventsFilepath = sys.argv[2] if len(sys.argv) > 2 else "./api/events.csv"
+    costsFilepath = sys.argv[1] if len(sys.argv) > 1 else "./teevity_format/teevity_savings.csv"
+    eventsFilepath = sys.argv[2] if len(sys.argv) > 2 else "./teevity_format/teevity_events.csv"
 
     api = TeevityAPI(costsFilepath, eventsFilepath)
     PRINT = True#False if len(sys.argv) > 1 and sys.argv[1] == "--json" else True
