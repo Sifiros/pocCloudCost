@@ -157,7 +157,7 @@
         function execGroupBy(tab, groupBy) {
             var groups = {}
             var everyContainers = {}//groupBy.length == 1 ? groups : {}
-
+   
             for (var row of tab) {
                 var curLvl = groups
                 var id = ""
@@ -180,10 +180,9 @@
 
             // Apply merge
             if (mergeWith) {
-                for (key in everyContainers) {
-                    for (key2 in everyContainers[key]) {
+                for (var key in everyContainers) {
+                    for (var key2 in everyContainers[key]) {
                         if (everyContainers[key][key2] instanceof Array) {
-                            // console.log('#> gonna merge ' + key2 + ' = ' + JSON.stringify(everyContainers[key][key2]))
                             everyContainers[key][key2] = execMerge(everyContainers[key][key2], mergeWith)
                         }
                     }
