@@ -99,25 +99,28 @@
             var earnedDuringCurrentCAU;
             var finalStr = "";
 
-            for (teevityEventType in tabScopes) {
+            for (var teevityEventType in tabScopes) {
                 earnedDuringCurrentEventType = 0;
                 var strToAppend = "";
-                for (costAllocationUnit in tabScopes[teevityEventType]) {
+                for (var costAllocationUnit in tabScopes[teevityEventType]) {
                     earnedDuringCurrentCAU = 0;
+                    var curContent = ""
                     tabScopes[teevityEventType][costAllocationUnit].forEach(function (item) {
                         totalEarned += item.saving;
                         earnedDuringCurrentEventType += item.saving;
                         earnedDuringCurrentCAU += item.saving;
-                        strToAppend += "<tr><td>" + moment(item.startDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
-                        strToAppend += "<td>" + moment(item.endDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
-                        strToAppend += "<td>" + item.id + "</td>";
-                        strToAppend += "<td>" + item.saving + "</td></tr>";
+                        curContent += "<tr><td>" + moment(item.startDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
+                        curContent += "<td>" + moment(item.endDate).format('MMMM Do YYYY, h:mm:ss a') + "</td>";
+                        curContent += "<td>" + item.id + "</td>";
+                        curContent += "<td>" + item.saving + "</td></tr>";
                     });
-                    strToAppend = "<tr><th scope='row'>" + "CAU : " + costAllocationUnit + "</th><th></th><th></th><th>" +
-                    earnedDuringCurrentCAU + "</th></tr>" + strToAppend;
+                    var newCAUBlock = "<tr><th scope='row'>" + "CAU : " + costAllocationUnit + "</th><th></th><th></th><th>"
+                                    + earnedDuringCurrentCAU + "</th></tr>" + curContent;
+                    strToAppend += newCAUBlock
+
                 }
-                finalStr += "<tr><th scope='row'>" + "Event type : " + teevityEventType + "</th><th></th><th></th><th>" +
-                earnedDuringCurrentEventType + "</th></tr>" + strToAppend;
+                finalStr += "<tr><th scope='row'>" + "Event type : " + teevityEventType + "</th><th></th><th></th><th>"
+                            + earnedDuringCurrentEventType + "</th></tr>" + strToAppend;
            }
             finalStr = "<thead><tr><td><b>" + "The total amount of Savings in this period is " + totalEarned +
                 "</b></td></tr>" + tableHead + finalStr + "</tbody>";
