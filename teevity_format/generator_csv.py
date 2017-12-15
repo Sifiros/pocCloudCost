@@ -89,7 +89,7 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
                         event_writer.writerow(eventRow)
 
                 # Some Cost randomization                       
-                currentRow['Cost'] = currentRow['Cost'] * random.uniform(0.9, 1.1)
+                # currentRow['Cost'] = currentRow['Cost'] * random.uniform(0.9, 1.1)
                 writer.writerow(currentRow)
 
             currentTime += timedelta(hours=1)
