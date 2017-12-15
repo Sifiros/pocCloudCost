@@ -2,6 +2,7 @@
 # vim: set fileencoding=utf-8 :
 
 import csv
+import copy
 from datetime import timedelta
 from dateutil.parser import *
 from os import system
@@ -35,12 +36,12 @@ def get_object_list():
         else:
             newRow['Operation'] = operation[1]
             newRow['Product'] = 'ec2_instance'
-            newRow['CAU'] = CAUs[random.randrange(0, 8, 1)]
-            usedCAUList.append(newRow['CAU'])
-            if x == 'm4.2xlarge':
-                rowList.append(newRow)
-                rowList.append(newRow)
-            rowList.append(newRow)
+        newRow['CAU'] = CAUs[random.randrange(0, 8, 1)]
+        usedCAUList.append(newRow['CAU'])
+        if x == 'm4.2xlarge':
+            rowList.append(copy.deepcopy(newRow))
+            rowList.append(copy.deepcopy(newRow))
+        rowList.append(newRow)
     CAUListSet = set(usedCAUList)
     return rowList, CAUListSet
 
@@ -94,12 +95,12 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
             currentTime += timedelta(hours=1)
             i += 1
 
-file = open(fname, "rb")
-ev_file = open(efname, "rb")
 random.seed(None)
 
 ret = system("cp ./save.csv ./teevity_savings.csv")
 ret2 = system("cp ./save_events.csv ./teevity_events.csv")
+file = open(fname, "rb")
+ev_file = open(efname, "rb")
 if ret == 0 and ret2 == 0:
     try:
         reader = csv.DictReader(file)
