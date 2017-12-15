@@ -12,9 +12,14 @@ def printEventTypeFromSavings(savings):
         print(' SAVING = ' + str(saving))
 
 def main():
-    PRINT = False if len(sys.argv) > 1 and sys.argv[1] == "--json" else True
+    costsFilepath = sys.argv[1] if len(sys.argv) > 1 else "./api/costs.csv"
+    eventsFilepath = sys.argv[2] if len(sys.argv) > 2 else "./api/events.csv"
+
+    api = TeevityAPI(costsFilepath, eventsFilepath)
+    PRINT = True#False if len(sys.argv) > 1 and sys.argv[1] == "--json" else True
     # try:
-    calculator = GainCalculator(TeevityAPI.GetCostDatas(), TeevityAPI.GetEvents())
+    calculator = GainCalculator(api.GetCostDatas(), api.GetEvents())
+    # return 
     if PRINT:
         calculator.printCurrentScope()
 

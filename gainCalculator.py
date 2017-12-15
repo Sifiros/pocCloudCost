@@ -18,19 +18,13 @@ class GainCalculator():
     def __init__(self, costs, events):
         self.costs = costs
         for cost in self.costs:
-            cost["CAU"] = "foo"
-            cost['tagGroup'] = "onch"
             cost['date'] = parse(cost['date'])
             if cost['date'].timestamp() > self.endPeriodDate.timestamp():
                 self.endPeriodDate = cost['date']
-            tot = 0
-            for k in cost['costs']:
-                tot += cost['costs'][k]
-            cost['costs'] = tot
+        self.costs.sort(key= lambda cur : cur['date'].timestamp())
 
         self.events = events
         for event in self.events:
-            event['CAU'] = 'foo'
             event['id'] = event['type'] + '_' + event['date'] + '_' + event['CAU']
             event['date'] = parse(event['date'])
 
@@ -45,10 +39,10 @@ class GainCalculator():
     # Création des event scopes (start date & endDate liés par un meme type d'event)
     def processEvents(self):
         eventCyclesMapping = {
-            'offon': ('start_instance', 'shutdown_instance'),
+            'offon': ('reStart', 'Shutdown'),
             'iops': ('increase_iops', 'decrease_iops'),
             'destroy_ebs_volume': ('destroy_ebs_volume', False),
-            'reserved_instance': ('reserved_instance', False)
+            'reserved_instance': ('RIStart', False)
         }
         curScopes = {}
         for cur in self.events:
@@ -64,7 +58,7 @@ class GainCalculator():
                         break
 
                     start = curScopes[cycleId] if cycleId in curScopes else \
-                            ({'startDate': cur['date'], 'custodianEffective': effectiveSavingEvent, 'affectedResources': cur['affectedResources'], 'id': cur['id'], 'type': cycleType, 'CAU': cur['CAU']})
+                            ({'startDate': cur['date'], 'custodianEffective': effectiveSavingEvent, 'id': cur['id'], 'type': cycleType, 'CAU': cur['CAU']})
 
                     if cycleId in curScopes or cycleEvents[1] == False: # we're on an end or one shot event : prepare new scope
                         newScope = start
@@ -125,7 +119,7 @@ class GainCalculator():
             costAndUsageDataItem['saving'] = 0 # contiendra le total de bénéfice de tous les event scopes s'y appliquant
             metricId = costAndUsageDataItem['CAU'] + costAndUsageDataItem['tagGroup']
             if metricId not in lastCost:
-                lastCost[metricId] = costAndUsageDataItem['costs']
+                lastCost[metricId] = costAndUsageDataItem['cost']
             curDate = costAndUsageDataItem['date']
             currentSavingCycles = self.getCurrentSavingCycles(curDate, costAndUsageDataItem['CAU'])
             currentScopes = currentSavingCycles if currentSavingCycles else []
@@ -144,7 +138,7 @@ class GainCalculator():
                 else: # sync theorical costs (in case of parent scope ending)
                     curScope['theoricalCost'][metricId] = lastScopes[curScope['CAU']][i]['theoricalCost'][metricId]
                 # Theorical saving between scope theorical cost and current real cost
-                curSavings[curScope['type']] = (curScope['theoricalCost'][metricId] - costAndUsageDataItem['costs'])
+                curSavings[curScope['type']] = (curScope['theoricalCost'][metricId] - costAndUsageDataItem['cost'])
                 i += 1
 
             nbScopes = len(currentScopes)
@@ -170,12 +164,12 @@ class GainCalculator():
                 'CAU': costAndUsageDataItem['CAU'],
                 'tagGroup': costAndUsageDataItem['tagGroup'],
                 'date': curDate.isoformat(),
-                'cost': costAndUsageDataItem['costs'],
+                'cost': costAndUsageDataItem['cost'],
                 'matchingEventTypes': False if not currentSavingCycles else True,
                 'saving': costAndUsageDataItem['saving']
             })
 
-            lastCost[metricId] = costAndUsageDataItem['costs']
+            lastCost[metricId] = costAndUsageDataItem['cost']
             lastScopes[costAndUsageDataItem['CAU']] = list(currentScopes) if currentScopes != False else []
 
         result['savingCycles']  = list(map(lambda scope: ({
