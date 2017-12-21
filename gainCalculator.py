@@ -131,7 +131,7 @@ class GainCalculator():
 
     def getTheoriticalSpendTagGroups_IfCostSavingActionHadNotBeenConducted(self, CAUId, dateTime, savingCycle):
         tagGroupsList = set()
-        theoricalDate = event['startDate'] - timedelta(hours=1)
+        theoricalDate = savingCycle['startDate'] - timedelta(hours=1)
         i = 0
         while theoricalDate.isoformat() not in self.costUnitsByDate:
             if i > 23:
@@ -147,7 +147,25 @@ class GainCalculator():
         return tagGroupsList
 
     def getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(self, CAUId, TagGroup, dateTime, savingCycle):
-        pass
+        if 'theoricalCost' not in savingCycle:
+            savingCycle['theoricalCost'] = {}
+        if TagGroup in savingCycle['theoricalCost']:
+            return savingCycle['theoricalCost'][TagGroup]
+
+        theoricalDate = savingCycle['startDate'] - timedelta(hours=1)
+        i = 0
+        while theoricalDate.isoformat() not in self.costUnitsByDate:
+            if i > 23:
+                return tagGroupsList
+            theoricalDate -= timedelta(hours=1)
+            i += 1
+
+        if CAUId not in self.costUnitsByDate[theoricalDate.isoformat()] or \
+            TagGroup not in self.costUnitsByDate[theoricalDate.isoformat()][CAUId]:
+            print("Cannot get theorical cost of saving cycle {} at {}".format(savingCycle['type'], dateTime.isoformat()))
+            return 0
+        savingCycle['theoricalCost'][TagGroup] = self.costUnitsByDate[theoricalDate.isoformat()][CAUId][TagGroup]['cost']
+        return savingCycle['theoricalCost'][TagGroup]
 
     def getSavings(self):
         # Also sets self.costUnitsByDate : 
@@ -184,9 +202,9 @@ class GainCalculator():
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         costUnit = self.costUnitsByDate[isodate][CAU][tagGroup]
                         saving = theoricalSavings[savingCycle['id']][tagGroup]
-                        if k < (nbCycles - 1):
-                            saving -= theoricalSavings[currentSavingCycles[(k + 1)]['id']][tagGroup]
-
+                        if i < (nbCycles - 1):
+                            saving -= theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]
+                        print("Saving of {} at {} by {}".format(saving, isodate, savingCycle['type']))
                     i +=1
 
                 # calculation end ; store current saving cycles
