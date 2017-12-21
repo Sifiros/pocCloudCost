@@ -167,7 +167,17 @@ class GainCalculator():
         savingCycle['theoricalCost'][TagGroup] = self.costUnitsByDate[theoricalDate.isoformat()][CAUId][TagGroup]['cost']
         return savingCycle['theoricalCost'][TagGroup]
 
+    # Renvoie chaque event ses metrics de savings pour chaque date ayant un cost
+    # Nécessite l'appel préalable de processEvents (création des eventscopes)
+    # TODO: -> event scope on off doit sarreter en fin de week
     def getSavings(self):
+        # sortie de la fonction : 
+        result = { 
+            "savings": [],
+            "costs": [],
+            "savingCycles": [],
+            "eventNames": []
+        }
         # Also sets self.costUnitsByDate : 
         sortedDates = self.getSortedDatesWithCostsCAU(self.costs)
         self.savingCyclesByDate = self.mapSortedDatesToSavingCycles(sortedDates, self.eventScopes)
@@ -183,6 +193,9 @@ class GainCalculator():
                 tagGroupsByCycle = {} # tagGroups sorted by cycleId
 
                 for savingCycle in currentSavingCycles:
+                    if 'theoricalCost' not in savingCycle:
+                        result['savingCycles'].append(savingCycle)
+                        savingCycle['saving'] = 0
                     theoricalSavings[savingCycle['id']] = {}
                     # list of tagGroups at this CAU + datetime, whether being OR would have been being effective without savingCycle action
                     tagGroupsByCycle[savingCycle['id']] = self.getTheoriticalSpendTagGroups_IfCostSavingActionHadNotBeenConducted(CAU, parse(isodate), savingCycle)
@@ -190,98 +203,50 @@ class GainCalculator():
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         # real cost for given CAU + tagGroup juste before savingCycle beginning
                         theoricalCost = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAU, tagGroup, parse(isodate), savingCycle)
-                        costUnit = self.costUnitsByDate[isodate][CAU][tagGroup]
+                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
+                        costAndUsageDataItem['saving'] = 0
                         # current saving = difference between theoricalCost & cur real cost
-                        theoricalSavings[savingCycle['id']][tagGroup] = theoricalCost - costUnit['cost']
+                        theoricalSavings[savingCycle['id']][tagGroup] = theoricalCost - costAndUsageDataItem['cost']
 
                 # every theorical savings calculated ; just subtract them
                 i = 0
                 nbCycles = len(currentSavingCycles)
                 for savingCycle in currentSavingCycles:
-
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
-                        costUnit = self.costUnitsByDate[isodate][CAU][tagGroup]
+                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
                         saving = theoricalSavings[savingCycle['id']][tagGroup]
                         if i < (nbCycles - 1):
                             saving -= theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]
+                        costAndUsageDataItem['saving'] += saving
+                        savingCycle['saving'] += saving
                         print("Saving of {} at {} by {}".format(saving, isodate, savingCycle['type']))
-                    i +=1
+                        result['savings'].append({
+                            'CAU': CAU,
+                            'tagGroup': tagGroup,
+                            'date': isodate,
+                            'type': savingCycle['type'],
+                            'saving': saving,
+                            'savingCycleId': savingCycle['id'], # On associe l'id du saving cycle au costItem
+                        })
+                    i += 1
 
+                # On ajoute chaque coût traité pour l'heure donnée au résultat
+                addedTagGroups = {}
+                for savingCycle in currentSavingCycles:
+                    for tagGroup in tagGroupsByCycle[savingCycle['id']]:
+                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
+                        if tagGroup not in addedTagGroups:
+                            result['costs'].append({
+                                'CAU': costAndUsageDataItem['CAU'],
+                                'tagGroup': costAndUsageDataItem['tagGroup'],
+                                'date': isodate,
+                                'cost': costAndUsageDataItem['cost'],
+                                'matchingEventTypes': False if not currentSavingCycles else True,
+                                'saving': costAndUsageDataItem['saving']
+                            })
+                            addedTagGroups[tagGroup] = True
                 # calculation end ; store current saving cycles
                 lastSavingCycles[CAU] = currentSavingCycles
-        return {'savings': []}
-    # Renvoie chaque event ses metrics de savings pour chaque date ayant un cost
-    # Nécessite l'appel préalable de processEvents (création des eventscopes)
-    # TODO: -> event scope on off doit sarreter en fin de week
-    def getSavings1(self):
-        # sortie de la fonction : 
-        result = { 
-            "savings": [],
-            "costs": [],
-            "savingCycles": [],
-            "eventNames": []
-        }
-        costs = list(self.costs)
-        lastScopes = {} # scopes applied on last cost metric sorted by CAU, required to detect whenever a scope ends before a child one
-        lastCost = {} # required for scope theorical costs (real cost before a scope beginning)
-        lastCostItemsByTagGroups = {} 
-
-        for costAndUsageDataItem in costs:
-            costAndUsageDataItem['saving'] = 0 # contiendra le total de bénéfice de tous les event scopes s'y appliquant
-            metricId = costAndUsageDataItem['CAU'] + costAndUsageDataItem['tagGroup']
-            if metricId not in lastCost:
-                lastCost[metricId] = costAndUsageDataItem['cost']
-            curDate = costAndUsageDataItem['date']
-            currentSavingCycles = self.getCurrentSavingCycles(curDate, costAndUsageDataItem['CAU'])
-            currentScopes = currentSavingCycles if currentSavingCycles else []
-            curSavings = {}
-            i = 0
-            for curScope in currentScopes:
-                if 'theoricalCost' not in curScope: # First scope appearance : init theoricalCost / saving
-                    if curScope['type'] not in result['eventNames']:
-                        result['eventNames'].append(curScope['type'])
-                    curScope['theoricalCost'] = {}
-                    curScope['saving'] = 0
-                    result['savingCycles'].append(curScope)
-
-                if metricId not in curScope['theoricalCost']: 
-                    curScope['theoricalCost'][metricId] = lastCost[metricId]
-                else: # sync theorical costs (in case of parent scope ending)
-                    curScope['theoricalCost'][metricId] = lastScopes[curScope['CAU']][i]['theoricalCost'][metricId]
-                # Theorical saving between scope theorical cost and current real cost
-                curSavings[curScope['type']] = (curScope['theoricalCost'][metricId] - costAndUsageDataItem['cost'])
-                i += 1
-
-            nbScopes = len(currentScopes)
-            for k, v in enumerate(currentScopes):
-                saving = curSavings[v['type']]
-                if k < (nbScopes - 1): # substract next theorical saving for the current real one
-                    saving -= curSavings[currentScopes[(k + 1)]['type']]
-                # saving = bénéfice de l'eventScope pour le costMetric actuel
-                result['savings'].append({
-                    'CAU': v['CAU'],
-                    'tagGroup': costAndUsageDataItem['tagGroup'],
-                    'date': curDate.isoformat(),
-                    'type': v['type'],
-                    'saving': saving,
-                    'savingCycleId': v['id'], # On associe l'id du saving cycle au costItem
-                })
-                # v['saving'] = Bénéfice total de l'eventScope appliqué à tous les costMetric de même CAU
-                v['saving'] += saving
-                # bénéfice de tous les scopes appliqués au costMetric actuel
-                costAndUsageDataItem['saving'] += saving
-
-            result['costs'].append({
-                'CAU': costAndUsageDataItem['CAU'],
-                'tagGroup': costAndUsageDataItem['tagGroup'],
-                'date': curDate.isoformat(),
-                'cost': costAndUsageDataItem['cost'],
-                'matchingEventTypes': False if not currentSavingCycles else True,
-                'saving': costAndUsageDataItem['saving']
-            })
-
-            lastCost[metricId] = costAndUsageDataItem['cost']
-            lastScopes[costAndUsageDataItem['CAU']] = list(currentScopes) if currentScopes != False else []
 
         result['savingCycles']  = list(map(lambda scope: ({
             'startDate': scope['startDate'].isoformat(),
