@@ -236,26 +236,24 @@ class GainCalculator():
                             'savingCycleId': savingCycle['id'], # On associe l'id du saving cycle au costItem
                         })
                     i += 1
-
-                # On ajoute chaque coût traité pour l'heure donnée au résultat
-                addedTagGroups = {}
-                for CAU in self.costUnitsByDate[isodate]:
-                    for tagGroup in self.costUnitsByDate[isodate][CAU]:
-                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup] if tagGroup in self.costUnitsByDate[isodate][CAU] else False
-                        if costAndUsageDataItem and (tagGroup + isodate) not in addedTagGroups:
-                            result['costs'].append({
-                                'CAU': costAndUsageDataItem['CAU'],
-                                'tagGroup': costAndUsageDataItem['tagGroup'],
-                                'date': isodate,
-                                'cost': costAndUsageDataItem['cost'],
-                                'matchingEventTypes': False if not currentSavingCycles else True,
-                                'saving': costAndUsageDataItem['saving'] if 'saving' in costAndUsageDataItem else 0
-                            })
-                            print("#> cost at {} = {}".format(isodate, costAndUsageDataItem['cost']))
-                            addedTagGroups[(tagGroup + isodate)] = True
-
                 # calculation end ; store current saving cycles
                 lastSavingCycles[CAU] = currentSavingCycles
+            # FIN boucle sur chaque CAU pour l'heure actuelle. On ajoute au résultat chaque coût traité
+            addedTagGroups = {}
+            for CAU in self.costUnitsByDate[isodate]:
+                for tagGroup in self.costUnitsByDate[isodate][CAU]:
+                    costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup] if tagGroup in self.costUnitsByDate[isodate][CAU] else False
+                    if costAndUsageDataItem and (tagGroup + isodate) not in addedTagGroups:
+                        result['costs'].append({
+                            'CAU': costAndUsageDataItem['CAU'],
+                            'tagGroup': costAndUsageDataItem['tagGroup'],
+                            'date': isodate,
+                            'cost': costAndUsageDataItem['cost'],
+                            'matchingEventTypes': False if not currentSavingCycles else True,
+                            'saving': costAndUsageDataItem['saving'] if 'saving' in costAndUsageDataItem else 0
+                        })
+                        print("#> cost at {} = {}".format(isodate, costAndUsageDataItem['cost']))
+                        addedTagGroups[(tagGroup + isodate)] = True
 
         result['savingCycles']  = list(map(lambda scope: ({
             'startDate': scope['startDate'].isoformat(),
