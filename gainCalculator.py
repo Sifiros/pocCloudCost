@@ -62,7 +62,6 @@ class GainCalculator():
         datesList.sort(key= lambda cur : parse(cur['isodate']).timestamp())
         return datesList
 
-    # Needs savingCycles to be sorted by startDate (usually done by processEvents() )
     def mapSortedDatesToSavingCycles(self, sortedDateItems, savingCycles):
         cyclesMap = {}
         for dateItem in sortedDateItems:
@@ -71,12 +70,12 @@ class GainCalculator():
             cyclesMap[isodate] = {}
 
             for cycle in savingCycles:
-                if ts >= cycle['endDate'].timestamp():
-                    break
-                if ts >= cycle['startDate'].timestamp() and cycle['custodianEffective']:
+                if ts >= cycle['startDate'].timestamp() and ts < cycle['endDate'].timestamp() and cycle['custodianEffective']:
                     if cycle['CAU'] not in cyclesMap[isodate]:
                         cyclesMap[isodate][cycle['CAU']] = []
                     cyclesMap[isodate][cycle['CAU']].append(cycle)
+                else:
+                    print("{} not after {} ({})".format(isodate, cycle['startDate'].isoformat(), 'true' if cycle['custodianEffective'] else 'false'))
 
         return cyclesMap
 
@@ -154,16 +153,15 @@ class GainCalculator():
 
         theoricalDate = savingCycle['startDate'] - timedelta(hours=1)
         i = 0
-        while theoricalDate.isoformat() not in self.costUnitsByDate:
+        while theoricalDate.isoformat() not in self.costUnitsByDate or \
+            CAUId not in self.costUnitsByDate[theoricalDate.isoformat()] or \
+            TagGroup not in self.costUnitsByDate[theoricalDate.isoformat()][CAUId]:
             if i > 23:
-                return tagGroupsList
+                print("Cannot get theorical cost of saving cycle {} at {}".format(savingCycle['type'], dateTime.isoformat()))
+                return 0
             theoricalDate -= timedelta(hours=1)
             i += 1
 
-        if CAUId not in self.costUnitsByDate[theoricalDate.isoformat()] or \
-            TagGroup not in self.costUnitsByDate[theoricalDate.isoformat()][CAUId]:
-            print("Cannot get theorical cost of saving cycle {} at {}".format(savingCycle['type'], dateTime.isoformat()))
-            return 0
         savingCycle['theoricalCost'][TagGroup] = self.costUnitsByDate[theoricalDate.isoformat()][CAUId][TagGroup]['cost']
         return savingCycle['theoricalCost'][TagGroup]
 
@@ -182,42 +180,51 @@ class GainCalculator():
         sortedDates = self.getSortedDatesWithCostsCAU(self.costs)
         self.savingCyclesByDate = self.mapSortedDatesToSavingCycles(sortedDates, self.eventScopes)
         # print("saving cycles by date = " + str(self.savingCyclesByDate))
-        print("costUnits by date / CAU / tagGroup : " + str(self.costUnitsByDate))
+        # print("costUnits by date / CAU / tagGroup : " + str(self.costUnitsByDate))
         lastSavingCycles = {} # contains saving cycles of last datetime, by CAU
 
         for dateTime in sortedDates:
             isodate = dateTime['isodate']
+            print(">{}".format(isodate))
             for CAU in dateTime['costItemsCAU']: # every CAU containing cost items at this datetime
+                print("\n\t{}".format(CAU))
                 currentSavingCycles = self.savingCyclesByDate[isodate][CAU] if CAU in self.savingCyclesByDate[isodate] else []
                 theoricalSavings = {} # savings sorted by cycleId then tagGroup
                 tagGroupsByCycle = {} # tagGroups sorted by cycleId
-
+                print("\tsavingcycles : {}".format(currentSavingCycles))
                 for savingCycle in currentSavingCycles:
+                    print("\t\t{}".format(savingCycle['id']))
                     if 'theoricalCost' not in savingCycle:
                         result['savingCycles'].append(savingCycle)
                         savingCycle['saving'] = 0
+                    if savingCycle['type'] not in result['eventNames']:
+                        result['eventNames'].append(savingCycle['type'])
                     theoricalSavings[savingCycle['id']] = {}
                     # list of tagGroups at this CAU + datetime, whether being OR would have been being effective without savingCycle action
                     tagGroupsByCycle[savingCycle['id']] = self.getTheoriticalSpendTagGroups_IfCostSavingActionHadNotBeenConducted(CAU, parse(isodate), savingCycle)
-
+                    print("\t\tfound taggroups : {}".format(str(tagGroupsByCycle[savingCycle['id']])))
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
+                        print("\t\t\t{}".format(tagGroup))
                         # real cost for given CAU + tagGroup juste before savingCycle beginning
                         theoricalCost = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAU, tagGroup, parse(isodate), savingCycle)
-                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
-                        costAndUsageDataItem['saving'] = 0
-                        # current saving = difference between theoricalCost & cur real cost
-                        theoricalSavings[savingCycle['id']][tagGroup] = theoricalCost - costAndUsageDataItem['cost']
+                        if tagGroup in self.costUnitsByDate[isodate][CAU]: # TagGroup toujours présent à l'heure actuelle
+                            costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
+                            costAndUsageDataItem['saving'] = 0
+                            theoricalSavings[savingCycle['id']][tagGroup] = theoricalCost - costAndUsageDataItem['cost']
+                        else: # TagGroup disparu : son dernier cout = 100% bénéfice
+                            theoricalSavings[savingCycle['id']][tagGroup] = theoricalCost
 
                 # every theorical savings calculated ; just subtract them
                 i = 0
                 nbCycles = len(currentSavingCycles)
                 for savingCycle in currentSavingCycles:
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
-                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
                         saving = theoricalSavings[savingCycle['id']][tagGroup]
-                        if i < (nbCycles - 1):
+                        if i < (nbCycles - 1) and tagGroup in theoricalSavings[currentSavingCycles[(i + 1)]['id']]:
                             saving -= theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]
-                        costAndUsageDataItem['saving'] += saving
+                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup] if tagGroup in self.costUnitsByDate[isodate][CAU] else False
+                        if costAndUsageDataItem:
+                            costAndUsageDataItem['saving'] += saving
                         savingCycle['saving'] += saving
                         print("Saving of {} at {} by {}".format(saving, isodate, savingCycle['type']))
                         result['savings'].append({
@@ -234,8 +241,8 @@ class GainCalculator():
                 addedTagGroups = {}
                 for savingCycle in currentSavingCycles:
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
-                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
-                        if tagGroup not in addedTagGroups:
+                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup] if tagGroup in self.costUnitsByDate[isodate][CAU] else False
+                        if costAndUsageDataItem and tagGroup not in addedTagGroups:
                             result['costs'].append({
                                 'CAU': costAndUsageDataItem['CAU'],
                                 'tagGroup': costAndUsageDataItem['tagGroup'],
