@@ -239,19 +239,21 @@ class GainCalculator():
 
                 # On ajoute chaque coût traité pour l'heure donnée au résultat
                 addedTagGroups = {}
-                for savingCycle in currentSavingCycles:
-                    for tagGroup in tagGroupsByCycle[savingCycle['id']]:
+                for CAU in self.costUnitsByDate[isodate]:
+                    for tagGroup in self.costUnitsByDate[isodate][CAU]:
                         costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup] if tagGroup in self.costUnitsByDate[isodate][CAU] else False
-                        if costAndUsageDataItem and tagGroup not in addedTagGroups:
+                        if costAndUsageDataItem and (tagGroup + isodate) not in addedTagGroups:
                             result['costs'].append({
                                 'CAU': costAndUsageDataItem['CAU'],
                                 'tagGroup': costAndUsageDataItem['tagGroup'],
                                 'date': isodate,
                                 'cost': costAndUsageDataItem['cost'],
                                 'matchingEventTypes': False if not currentSavingCycles else True,
-                                'saving': costAndUsageDataItem['saving']
+                                'saving': costAndUsageDataItem['saving'] if 'saving' in costAndUsageDataItem else 0
                             })
-                            addedTagGroups[tagGroup] = True
+                            print("#> cost at {} = {}".format(isodate, costAndUsageDataItem['cost']))
+                            addedTagGroups[(tagGroup + isodate)] = True
+
                 # calculation end ; store current saving cycles
                 lastSavingCycles[CAU] = currentSavingCycles
 
