@@ -152,8 +152,9 @@
         }
         function execMerge(tab, mergeWith) {
             return tab.slice(1).reduce(function(merge, current) {
-                for (key in mergeWith)
+                for (var key of mergeWith) {
                     merge[key] += current[key]
+                }
                 return merge
             }, tab[0])
         }
