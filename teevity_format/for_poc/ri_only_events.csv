@@ -1,0 +1,5 @@
+Date,CAU,Type
+2017-08-31T08:00:00,PROD/ProjectA/Backend,RIStart
+2017-08-31T08:00:00,PROD/ProjectB/Fontend,RIStart
+2017-08-31T08:00:00,DEV/ProjectB/Backend,RIStart
+2017-08-31T08:00:00,DEV/ProjectA/Backend,RIStart

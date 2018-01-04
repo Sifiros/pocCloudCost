@@ -42,8 +42,9 @@ class TeevityAPI:
 		try:
 			file = open(file, 'r')
 			reader = csv.DictReader(file)
-		except:
-			raise NameError("Unable to parse specified csv file " + file)
+		except Exception as e:
+			print(e)
+			exit(1)
 
 		for row in reader:
 			curDict = {}

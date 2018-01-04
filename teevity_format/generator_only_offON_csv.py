@@ -8,13 +8,13 @@ from dateutil.parser import *
 from os import system
 import random
 
-fname = "teevity_savings.csv"
+fname = "teevity_cost.csv"
 efname = "teevity_events.csv"
 
 CAUs = ['PROD/ProjectA/Fontend', 'PROD/ProjectA/Backend', 'PROD/ProjectB/Fontend', 'PROD/ProjectB/Backend', \
         'DEV/ProjectA/Fontend', 'DEV/ProjectA/Backend', 'DEV/ProjectB/Fontend', 'DEV/ProjectB/Backend']
 
-iteration_number = 1000
+iteration_number = 72
 account = '492743284828'
 startDate = '2017-08-10-12:00'
 region = 'eu-west-1'
@@ -36,11 +36,16 @@ def get_object_list():
         else:
             newRow['Operation'] = operation[1]
             newRow['Product'] = 'ec2_instance'
-        newRow['CAU'] = CAUs[random.randrange(0, 8, 1)]
-        usedCAUList.append(newRow['CAU'])
+
+        # DEBUG HARDCODED VALUE
         if x == 'm4.2xlarge':
-            rowList.append(copy.deepcopy(newRow))
-            rowList.append(copy.deepcopy(newRow))
+            newRow['CAU'] = CAUs[3]
+        elif x == 'r3.8xlarge':
+            newRow['CAU'] = CAUs[5]
+        else:
+            newRow['CAU'] = CAUs[random.randrange(0, 8, 1)]
+
+        usedCAUList.append(newRow['CAU'])
         rowList.append(newRow)
     CAUListSet = set(usedCAUList)
     return rowList, CAUListSet
@@ -58,22 +63,43 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
             isRIAlreadyTriggered = False
             isShutDownAlreadyTriggered = False
             isReStartAlreadyTriggered = False
+            isStartR8Triggered = False
+            isStopR8Triggedred = False
 
             for currentRow in rowList:
                 currentRow['Date'] = currentTime.isoformat()
 
                 # Trigger and write RI event
-                if i == (iteration_number) / 2:
-                    currentRow['Operation'] = operation[0]
-                    currentRow['Cost'] = currentRow['Cost'] * 0.5
-                    if isRIAlreadyTriggered == False:
-                        isRIAlreadyTriggered = True
-                        for CAUType in usedCauSet:
-                            eventRow = {'Date' : currentTime.isoformat(), 'CAU': CAUType, 'Type': eventType['Ri']}
-                            event_writer.writerow(eventRow)
+#                if i == (iteration_number) / 2:
+#                    currentRow['Operation'] = operation[0]
+#                    currentRow['Cost'] = currentRow['Cost'] * 0.5
+#                    if isRIAlreadyTriggered == False:
+#                        isRIAlreadyTriggered = True
+#                        for CAUType in usedCauSet:
+#                            eventRow = {'Date' : currentTime.isoformat(), 'CAU': CAUType, 'Type': eventType['Ri']}
+#                            event_writer.writerow(eventRow)
 
-               # Trigger and write ShutDown event
-                if currentTime.hour == 19:
+
+                if currentRow['UsageType'] == 'r3.8xlarge' and currentTime.hour == 19:
+                    print(currentRow['UsageType'])
+                    currentRow['Cost'] = currentRow['Cost'] * 0.70
+                    if isStopR8Triggedred == False:
+                        isStopR8Triggedred = True
+                        eventRow = {'Date' : currentTime.isoformat(), 'CAU': currentRow['CAU'], 'Type': eventType['shut']}
+                        event_writer.writerow(eventRow)
+
+                if currentRow['UsageType'] == 'r3.8xlarge' and currentTime.hour == 8:
+                    print(currentRow['UsageType'])
+                    currentRow['Cost'] = usageCost['r3.8xlarge']
+                    if isStartR8Triggered == False:
+                        isStartR8Triggered = True
+                        eventRow = {'Date' : currentTime.isoformat(), 'CAU': currentRow['CAU'], 'Type': eventType['start']}
+                        event_writer.writerow(eventRow)
+
+
+                # Trigger and write ShutDown event
+                if currentRow['UsageType'] == 'm4.2xlarge' and currentTime.hour == 19:
+                    print(currentRow['UsageType'])
                     currentRow['Cost'] = currentRow['Cost'] * 0.70
                     if isShutDownAlreadyTriggered == False:
                         isShutDownAlreadyTriggered = True
@@ -81,15 +107,16 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
                         event_writer.writerow(eventRow)
 
                 # Trigger and write ReStart event
-                if currentTime.hour == 8:
-                    currentRow['Cost'] = usageCost[currentRow['UsageType']]
+                if currentRow['UsageType'] == 'm4.2xlarge' and currentTime.hour == 8:
+                    print(currentRow['UsageType'])
+                    currentRow['Cost'] = usageCost['m4.2xlarge']
                     if isReStartAlreadyTriggered == False:
                         isReStartAlreadyTriggered = True
                         eventRow = {'Date' : currentTime.isoformat(), 'CAU': currentRow['CAU'], 'Type': eventType['start']}
                         event_writer.writerow(eventRow)
 
                 # Some Cost randomization                       
-                #currentRow['Cost'] = currentRow['Cost'] * random.uniform(0.9, 1.1)
+                # currentRow['Cost'] = currentRow['Cost'] * random.uniform(0.9, 1.1)
                 writer.writerow(currentRow)
 
             currentTime += timedelta(hours=1)
@@ -97,7 +124,7 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
 
 random.seed(None)
 
-ret = system("cp ./save.csv ./teevity_savings.csv")
+ret = system("cp ./save.csv ./teevity_cost.csv")
 ret2 = system("cp ./save_events.csv ./teevity_events.csv")
 file = open(fname, "rb")
 ev_file = open(efname, "rb")
