@@ -150,10 +150,15 @@ class GainCalculator():
             tagGroupsList.add(tagGroup)
         return tagGroupsList
 
-    def getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(self, CAUId, TagGroup, dateTime, savingCycle):
+    def getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(self, CAUId, TagGroup, dateTime, savingCycle, i):
         if 'theoricalCost' not in savingCycle:
             savingCycle['theoricalCost'] = {}
         if TagGroup in savingCycle['theoricalCost']:
+            # Synchronize (whenever a parent end before child)
+            lastDate = (dateTime - timedelta(hours = 1)).isoformat()
+            if len(self.savingCyclesByDate[lastDate][CAUId]) > i and 'theoricalCost' in self.savingCyclesByDate[lastDate][CAUId][i] \
+                and TagGroup in self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost']:
+                savingCycle['theoricalCost'][TagGroup] = self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost'][TagGroup]
             return savingCycle['theoricalCost'][TagGroup]
 
         theoricalDate = savingCycle['startDate'] - timedelta(hours=1)
@@ -162,6 +167,7 @@ class GainCalculator():
             CAUId not in self.costUnitsByDate[theoricalDate.isoformat()] or \
             TagGroup not in self.costUnitsByDate[theoricalDate.isoformat()][CAUId]:
             if i > 23:
+                print("negative benef for {} at {} (cycle {})".format(TagGroup, dateTime.isoformat(), savingCycle['type']))
                 return 0
             theoricalDate -= timedelta(hours=1)
             i += 1
@@ -190,6 +196,7 @@ class GainCalculator():
                 currentSavingCycles = self.savingCyclesByDate[isodate][CAU] if CAU in self.savingCyclesByDate[isodate] else []
                 theoricalSavings = {} # savings sorted by cycleId then tagGroup
                 tagGroupsByCycle = {} # tagGroups sorted by cycleId
+                savingCycleNb = 0
                 for savingCycle in currentSavingCycles:
                     if 'theoricalCost' not in savingCycle:
                         result['savingCycles'].append(savingCycle)
@@ -201,13 +208,15 @@ class GainCalculator():
                     tagGroupsByCycle[savingCycle['id']] = self.getTheoriticalSpendTagGroups_IfCostSavingActionHadNotBeenConducted(CAU, parse(isodate), savingCycle)
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         # real cost for given CAU + tagGroup juste before savingCycle beginning
-                        theoricalCost = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAU, tagGroup, parse(isodate), savingCycle)
+                        theoricalCost = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAU, tagGroup, parse(isodate), savingCycle, savingCycleNb)
                         if tagGroup in self.costUnitsByDate[isodate][CAU]: # TagGroup toujours présent à l'heure actuelle
                             costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
                             costAndUsageDataItem['saving'] = 0
                             theoricalSavings[savingCycle['id']][tagGroup] = theoricalCost - costAndUsageDataItem['cost']
                         else: # TagGroup disparu : son dernier cout = 100% bénéfice
                             theoricalSavings[savingCycle['id']][tagGroup] = theoricalCost
+
+                    savingCycleNb += 1
 
                 # every theorical savings calculated ; just subtract them
                 i = 0
