@@ -156,28 +156,33 @@ class GainCalculator():
         if TagGroup in savingCycle['theoricalCost']:
             # Synchronize (whenever a parent end before child)
             lastDate = (dateTime - timedelta(hours = 1)).isoformat()
-            if len(self.savingCyclesByDate[lastDate][CAUId]) > i and 'theoricalCost' in self.savingCyclesByDate[lastDate][CAUId][i] and \
+            if CAUId in self.savingCyclesByDate[lastDate] and len(self.savingCyclesByDate[lastDate][CAUId]) > i and 'theoricalCost' in self.savingCyclesByDate[lastDate][CAUId][i] and \
             TagGroup in self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost']:
                 savingCycle['theoricalCost'][TagGroup] = self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost'][TagGroup]
             return savingCycle['theoricalCost'][TagGroup]
 
+        # First time looking for savingCycle's theoricalCost 
+        theoricalCostUnit = False
         theoricalDate = savingCycle['startDate'] - timedelta(hours=1)
-        i = 0
-        while theoricalDate.isoformat() not in self.costUnitsByDate or \
-            CAUId not in self.costUnitsByDate[theoricalDate.isoformat()] or \
-            TagGroup not in self.costUnitsByDate[theoricalDate.isoformat()][CAUId]:
-            if i > 23:
-                print("negative benef for {} at {} (cycle {})".format(TagGroup, dateTime.isoformat(), savingCycle['type']))
-                return 0
-            theoricalDate -= timedelta(hours=1)
-            i += 1
+        if theoricalDate.isoformat() in self.costUnitsByDate and CAUId in self.costUnitsByDate[theoricalDate.isoformat()] and \
+            TagGroup in self.costUnitsByDate[theoricalDate.isoformat()][CAUId]:
+            if theoricalDate.isoformat() not in self.savingCyclesByDate or CAUId not in self.savingCyclesByDate[theoricalDate.isoformat()] or \
+                len(self.savingCyclesByDate[theoricalDate.isoformat()][CAUId]) < 1:
+                theoricalCostUnit = self.costUnitsByDate[theoricalDate.isoformat()][CAUId][TagGroup]['cost']
+            else: # Some cycle at (curCycleStartDate - X) ; check it is no ended at dateTime
+                lastCycle = self.savingCyclesByDate[theoricalDate.isoformat()][CAUId][-1]
+                if lastCycle['endDate'].timestamp() > dateTime.timestamp():
+                    theoricalCostUnit = self.costUnitsByDate[theoricalDate.isoformat()][CAUId][TagGroup]['cost']
+                else: # recursively retrieve theorical cost of this ended cycle
+                    savingCycle['theoricalCost'][TagGroup] = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAUId, TagGroup, lastCycle['startDate'], lastCycle, len(self.savingCyclesByDate[theoricalDate.isoformat()][CAUId]) - 1)
+                    return savingCycle['theoricalCost'][TagGroup]
 
-        savingCycle['theoricalCost'][TagGroup] = self.costUnitsByDate[theoricalDate.isoformat()][CAUId][TagGroup]['cost']
+        if theoricalCostUnit is False:
+            savingCycle['theoricalCost'][TagGroup] = 0
+            return 0
+        savingCycle['theoricalCost'][TagGroup] = theoricalCostUnit
         return savingCycle['theoricalCost'][TagGroup]
 
-    # Renvoie chaque event ses metrics de savings pour chaque date ayant un cost
-    # Nécessite l'appel préalable de processEvents (création des eventscopes)
-    # TODO: -> event scope on off doit sarreter en fin de week
     def getSavings(self):
         # sortie de la fonction : 
         result = { 
