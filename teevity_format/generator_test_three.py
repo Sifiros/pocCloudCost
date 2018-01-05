@@ -14,7 +14,7 @@ efname = "teevity_events.csv"
 CAUs = ['PROD/ProjectA/Frontend', 'PROD/ProjectA/Backend', 'PROD/ProjectB/Frontend', 'PROD/ProjectB/Backend', \
         'DEV/ProjectA/Frontend', 'DEV/ProjectA/Backend', 'DEV/ProjectB/Frontend', 'DEV/ProjectB/Backend']
 
-iteration_number = 1000
+iteration_number = 96
 account = '492743284828'
 startDate = '2017-08-10-12:00'
 region = 'eu-west-1'
