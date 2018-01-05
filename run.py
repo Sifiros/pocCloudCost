@@ -7,8 +7,9 @@ dataType = {'ri': "cp ./teevity_format/for_poc/ri_only_events.csv ./teevity_form
             'no_event':"cp ./teevity_format/for_poc/void_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/void_savings.csv ./teevity_format/teevity_savings.csv",
             'both':"cp ./teevity_format/for_poc/both_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/both_savings.csv ./teevity_format/teevity_savings.csv",
             'cloudC':"cp ./teevity_format/for_poc/cloudC_only_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/cloudC_only_savings.csv ./teevity_format/teevity_savings.csv",
-            'random' : "cp ./teevity_format/for_poc/random_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/random_savings.csv ./teevity_format/teevity_savings.csv",
-            'test' : "cp ./teevity_format/currently_used/teevity_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/currently_used/teevity_savings.csv ./teevity_format/teevity_savings.csv",
+            'same_time':"cp ./teevity_format/for_poc/event_same_time_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/event_same_time_savings.csv ./teevity_format/teevity_savings.csv",
+            'iops_iner':"cp ./teevity_format/for_poc/iops_iner_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/iops_iner_savings.csv ./teevity_format/teevity_savings.csv",
+            'iops_outer':"cp ./teevity_format/for_poc/iops_outer_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/iops_outer_savings.csv ./teevity_format/teevity_savings.csv",
 #            'oneweek':"cp ./api/mocks/oneweek_cost.py ./api/costs.py && cp ./api/mocks/oneweek_event.py ./api/events.py",
 #            'sametime':"cp ./teevity_format/for_poc/ri_only_events ./teevity_format/teevity_events && cp ./teevity_format/for_poc/ri_only_savings ./teevity_format/teevity_savings"
 #            'ended_onoff':"cp ./api/mocks/ended_onoff_cost.py ./api/costs.py && cp ./api/mocks/ended_onoff_event.py ./api/events.py",
