@@ -5,8 +5,8 @@ from os import system
 
 dataType = {'ri': "cp ./teevity_format/for_poc/ri_only_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/ri_only_savings.csv ./teevity_format/teevity_savings.csv",
             'no_event':"cp ./teevity_format/for_poc/void_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/void_savings.csv ./teevity_format/teevity_savings.csv",
-            'both':"cp ./teevity_format/for_poc/weird_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/weird_savings.csv ./teevity_format/teevity_savings.csv",
-            'cloudC':"cp ./teevity_format/for_poc/offon_only_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/offon_only_savings.csv ./teevity_format/teevity_savings.csv",
+            'both':"cp ./teevity_format/for_poc/both_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/both_savings.csv ./teevity_format/teevity_savings.csv",
+            'cloudC':"cp ./teevity_format/for_poc/cloudC_only_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/cloudC_only_savings.csv ./teevity_format/teevity_savings.csv",
             'random' : "cp ./teevity_format/for_poc/random_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/random_savings.csv ./teevity_format/teevity_savings.csv",
             'test' : "cp ./teevity_format/currently_used/teevity_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/currently_used/teevity_savings.csv ./teevity_format/teevity_savings.csv",
 #            'oneweek':"cp ./api/mocks/oneweek_cost.py ./api/costs.py && cp ./api/mocks/oneweek_event.py ./api/events.py",

@@ -156,8 +156,8 @@ class GainCalculator():
         if TagGroup in savingCycle['theoricalCost']:
             # Synchronize (whenever a parent end before child)
             lastDate = (dateTime - timedelta(hours = 1)).isoformat()
-            if len(self.savingCyclesByDate[lastDate][CAUId]) > i and 'theoricalCost' in self.savingCyclesByDate[lastDate][CAUId][i] \
-                and TagGroup in self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost']:
+            if len(self.savingCyclesByDate[lastDate][CAUId]) > i and 'theoricalCost' in self.savingCyclesByDate[lastDate][CAUId][i] and \
+            TagGroup in self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost']:
                 savingCycle['theoricalCost'][TagGroup] = self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost'][TagGroup]
             return savingCycle['theoricalCost'][TagGroup]
 
