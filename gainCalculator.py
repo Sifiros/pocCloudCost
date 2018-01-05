@@ -154,11 +154,18 @@ class GainCalculator():
         if 'theoricalCost' not in savingCycle:
             savingCycle['theoricalCost'] = {}
         if TagGroup in savingCycle['theoricalCost']:
-            # Synchronize (whenever a parent end before child)
+            # Synchronize (check if current cycle parent just ended)
             lastDate = (dateTime - timedelta(hours = 1)).isoformat()
-            if CAUId in self.savingCyclesByDate[lastDate] and len(self.savingCyclesByDate[lastDate][CAUId]) > i and 'theoricalCost' in self.savingCyclesByDate[lastDate][CAUId][i] and \
-            TagGroup in self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost']:
+            if CAUId in self.savingCyclesByDate[lastDate] and len(self.savingCyclesByDate[lastDate][CAUId]) > (i + 1) and \
+                self.savingCyclesByDate[lastDate][CAUId][(i + 1)] == savingCycle and \
+                (i == 0 or self.savingCyclesByDate[dateTime.isoformat()][CAUId][(i - 1)] != self.savingCyclesByDate[lastDate][CAUId][i]):
                 savingCycle['theoricalCost'][TagGroup] = self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost'][TagGroup]
+                if (savingCycle['type'] == 'iops' or savingCycle['type'] == 'reserved_instance') and dateTime.isoformat() == '2017-08-12T08:00:00':
+                    print("#> " + savingCycle['type'] + " CP from " + self.savingCyclesByDate[lastDate][CAUId][i]['type'] + ':'+ str(self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost']))
+                    # print("#> CP from " + self.savingCyclesByDate[lastDate][CAUId][i]['type'] + '/'+ self.savingCyclesByDate[lastDate][CAUId][i]['startDate'].isoformat())
+            if (savingCycle['type'] == 'iops' or savingCycle['type'] == 'reserved_instance') and dateTime.isoformat() == '2017-08-12T08:00:00':
+                print("#> " + savingCycle['type'] + " SYNC THEORIC COST '" + TagGroup + "' = " + str(savingCycle['theoricalCost'][TagGroup]))
+                print("#>\n")
             return savingCycle['theoricalCost'][TagGroup]
 
         # First time looking for savingCycle's theoricalCost 
@@ -211,6 +218,7 @@ class GainCalculator():
                     theoricalSavings[savingCycle['id']] = {}
                     # list of tagGroups at this CAU + datetime, whether being OR would have been being effective without savingCycle action
                     tagGroupsByCycle[savingCycle['id']] = self.getTheoriticalTagGroups_IfCostSavingActionHadNotBeenConducted(CAU, parse(isodate), savingCycle)
+
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         # real cost for given CAU + tagGroup juste before savingCycle beginning
                         theoricalCost = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAU, tagGroup, parse(isodate), savingCycle, savingCycleNb)
@@ -229,7 +237,11 @@ class GainCalculator():
                 for savingCycle in currentSavingCycles:
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         saving = theoricalSavings[savingCycle['id']][tagGroup]
+                        if (savingCycle['type'] == 'iops' or savingCycle['type'] == 'reserved_instance') and isodate == '2017-08-12T09:00:00':
+                            print("#> " + savingCycle['type'] + " on '" + tagGroup + "' has saving of " + str(saving))
                         if i < (nbCycles - 1) and tagGroup in theoricalSavings[currentSavingCycles[(i + 1)]['id']]:
+                            if (savingCycle['type'] == 'iops' or savingCycle['type'] == 'reserved_instance') and isodate == '2017-08-12T09:00:00':
+                                print("#> " + savingCycle['type'] + " SUBTRACTEDDDD " + str(theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]))
                             saving -= theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]
                         costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup] if tagGroup in self.costUnitsByDate[isodate][CAU] else False
                         if costAndUsageDataItem:
