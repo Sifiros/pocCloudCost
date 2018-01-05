@@ -126,7 +126,7 @@ class GainCalculator():
             self.eventScopes.append(unfinishedEvent)
         self.eventScopes.sort(key= lambda cur : cur['startDate'].timestamp())
 
-    def getTheoriticalSpendTagGroups_IfCostSavingActionHadNotBeenConducted(self, CAUId, dateTime, savingCycle):
+    def getTheoriticalTagGroups_IfCostSavingActionHadNotBeenConducted(self, CAUId, dateTime, savingCycle):
         tagGroupsList = set()
         theoricalDate = savingCycle['startDate'] - timedelta(hours=1)
         i = 0
@@ -210,7 +210,7 @@ class GainCalculator():
                         result['eventNames'].append(savingCycle['type'])
                     theoricalSavings[savingCycle['id']] = {}
                     # list of tagGroups at this CAU + datetime, whether being OR would have been being effective without savingCycle action
-                    tagGroupsByCycle[savingCycle['id']] = self.getTheoriticalSpendTagGroups_IfCostSavingActionHadNotBeenConducted(CAU, parse(isodate), savingCycle)
+                    tagGroupsByCycle[savingCycle['id']] = self.getTheoriticalTagGroups_IfCostSavingActionHadNotBeenConducted(CAU, parse(isodate), savingCycle)
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         # real cost for given CAU + tagGroup juste before savingCycle beginning
                         theoricalCost = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAU, tagGroup, parse(isodate), savingCycle, savingCycleNb)
