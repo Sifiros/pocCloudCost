@@ -8,9 +8,9 @@ dataType = {'ri': "cp ./teevity_format/for_poc/ri_only_events.csv ./teevity_form
             'both':"cp ./teevity_format/for_poc/weird_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/weird_savings.csv ./teevity_format/teevity_savings.csv",
             'cloudC':"cp ./teevity_format/for_poc/offon_only_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/offon_only_savings.csv ./teevity_format/teevity_savings.csv",
             'random' : "cp ./teevity_format/for_poc/random_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/random_savings.csv ./teevity_format/teevity_savings.csv",
-            'test' : "cp ./teevity_format/currenly_used/teevity_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/currently_used/teevity_savings.csv ./teevity_format/teevity_savings.csv",
+            'test' : "cp ./teevity_format/currently_used/teevity_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/currently_used/teevity_savings.csv ./teevity_format/teevity_savings.csv",
 #            'oneweek':"cp ./api/mocks/oneweek_cost.py ./api/costs.py && cp ./api/mocks/oneweek_event.py ./api/events.py",
-#            'sametime':"cp ./teevity_format/for_poc/ri_only_events ./teevity_format/teevity_events && cp ./teevity_format/for_poc/ri_only_savings ./teevity_format/teevity_savings" 
+#            'sametime':"cp ./teevity_format/for_poc/ri_only_events ./teevity_format/teevity_events && cp ./teevity_format/for_poc/ri_only_savings ./teevity_format/teevity_savings"
 #            'ended_onoff':"cp ./api/mocks/ended_onoff_cost.py ./api/costs.py && cp ./api/mocks/ended_onoff_event.py ./api/events.py",
 #            '3events':"cp ./api/mocks/3events_cost.py ./api/costs.py && cp ./api/mocks/3events_event.py ./api/events.py",
             }
