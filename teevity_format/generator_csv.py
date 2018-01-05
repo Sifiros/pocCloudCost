@@ -11,10 +11,10 @@ import random
 fname = "teevity_savings.csv"
 efname = "teevity_events.csv"
 
-CAUs = ['PROD/ProjectA/Fontend', 'PROD/ProjectA/Backend', 'PROD/ProjectB/Fontend', 'PROD/ProjectB/Backend', \
-        'DEV/ProjectA/Fontend', 'DEV/ProjectA/Backend', 'DEV/ProjectB/Fontend', 'DEV/ProjectB/Backend']
+CAUs = ['PROD/ProjectA/Frontend', 'PROD/ProjectA/Backend', 'PROD/ProjectB/Frontend', 'PROD/ProjectB/Backend', \
+        'DEV/ProjectA/Frontend', 'DEV/ProjectA/Backend', 'DEV/ProjectB/Frontend', 'DEV/ProjectB/Backend']
 
-iteration_number = 120
+iteration_number = 96
 account = '492743284828'
 startDate = '2017-08-10-12:00'
 region = 'eu-west-1'
@@ -55,9 +55,8 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
 
         i = 0
         while i < iteration_number:
+            isThisEventAlreadySet = {e:False for e in usedCauSet}
             isRIAlreadyTriggered = False
-            isShutDownAlreadyTriggered = False
-            isReStartAlreadyTriggered = False
 
             for currentRow in rowList:
                 currentRow['Date'] = currentTime.isoformat()
@@ -75,8 +74,8 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
                # Trigger and write ShutDown event
                 if currentTime.hour == 19:
                     currentRow['Cost'] = currentRow['Cost'] * 0.70
-                    if isShutDownAlreadyTriggered == False: # don't write x same events for the same type
-                        isShutDownAlreadyTriggered = True
+                    if isThisEventAlreadySet[currentRow['CAU']] == False:
+                        isThisEventAlreadySet[currentRow['CAU']] = True
                         eventRow = {'Date' : currentTime.isoformat(), 'CAU': currentRow['CAU'], 'Type': eventType['shut']}
                         event_writer.writerow(eventRow)
 
@@ -88,8 +87,8 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
                     if currentRow['Operation'] == operation[0]:
                         currentRow['Cost'] = currentRow['Cost'] * 0.5
                     print("After : Identity => {} Cost => {} && Operation => {}".format(currentRow['UsageType'], currentRow['Cost'], currentRow['Operation']))
-                    if isReStartAlreadyTriggered == False:
-                        isReStartAlreadyTriggered = True
+                    if isThisEventAlreadySet[currentRow['CAU']] == False:
+                        isThisEventAlreadySet[currentRow['CAU']] = True
                         eventRow = {'Date' : currentTime.isoformat(), 'CAU': currentRow['CAU'], 'Type': eventType['start']}
                         event_writer.writerow(eventRow)
 
