@@ -164,12 +164,10 @@ class GainCalculator():
                 self.savingCyclesByDate[lastDate][CAUId][(i + 1)] == savingCycle and \
                 (i == 0 or self.savingCyclesByDate[dateTime.isoformat()][CAUId][(i - 1)] != self.savingCyclesByDate[lastDate][CAUId][i]):
                 savingCycle['theoricalCost'][TagGroup] = self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost'][TagGroup]
-                if (savingCycle['type'] == 'iops' or savingCycle['type'] == 'reserved_instance') and dateTime.isoformat() == '2017-08-12T08:00:00':
+                if dateTime.isoformat() == '2017-08-11T09:00:00':
                     print("#> " + savingCycle['type'] + " CP from " + self.savingCyclesByDate[lastDate][CAUId][i]['type'] + ':'+ str(self.savingCyclesByDate[lastDate][CAUId][i]['theoricalCost']))
-                    # print("#> CP from " + self.savingCyclesByDate[lastDate][CAUId][i]['type'] + '/'+ self.savingCyclesByDate[lastDate][CAUId][i]['startDate'].isoformat())
-            if (savingCycle['type'] == 'iops' or savingCycle['type'] == 'reserved_instance') and dateTime.isoformat() == '2017-08-12T08:00:00':
-                print("#> " + savingCycle['type'] + " SYNC THEORIC COST '" + TagGroup + "' = " + str(savingCycle['theoricalCost'][TagGroup]))
-                print("#>\n")
+            if dateTime.isoformat() == '2017-08-11T08:00:00' or dateTime.isoformat() == '2017-08-11T07:00:00' or dateTime.isoformat() == '2017-08-11T00:00:00':
+                print("#> " + dateTime.isoformat() + " / " + savingCycle['type'] + " THEORIC COST '" + TagGroup + "/"+ CAUId+ "' = " + str(savingCycle['theoricalCost'][TagGroup]))
             return savingCycle['theoricalCost'][TagGroup]
 
         # First time looking for savingCycle's theoricalCost 
@@ -188,7 +186,17 @@ class GainCalculator():
                     savingCycle['theoricalCost'][TagGroup] = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAUId, TagGroup, lastCycle['startDate'], lastCycle, len(self.savingCyclesByDate[theoricalDate.isoformat()][CAUId]) - 1)
                     return savingCycle['theoricalCost'][TagGroup]
 
+        # check old theorical cost (retrieve theorical cost of old groups in any other cycle type than current one)
+        if theoricalCostUnit is False and theoricalDate.isoformat() in self.savingCyclesByDate and \
+            CAUId in self.savingCyclesByDate[theoricalDate.isoformat()]:
+            for curCycle in self.savingCyclesByDate[theoricalDate.isoformat()][CAUId]:
+                if TagGroup in curCycle['theoricalCost']:
+                    theoricalCostUnit = curCycle['theoricalCost'][TagGroup]
+                    break
+
         if theoricalCostUnit is False:
+            if dateTime.isoformat() == '2017-08-11T08:00:00':
+                print("#> " + dateTime.isoformat() + " / " + savingCycle['type'] + " THEORIC COST '" + TagGroup + "/" + CAUId+ "' not found at " + theoricalDate.isoformat() + " : " + str(self.costUnitsByDate[theoricalDate.isoformat()]))
             savingCycle['theoricalCost'][TagGroup] = 0
             return 0
         savingCycle['theoricalCost'][TagGroup] = theoricalCostUnit
@@ -241,10 +249,10 @@ class GainCalculator():
                 for savingCycle in currentSavingCycles:
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         saving = theoricalSavings[savingCycle['id']][tagGroup]
-                        if isodate == '2017-08-11T02:00:00':
+                        if isodate == '2017-08-11T09:00:00':
                             print("#> " + savingCycle['type'] + " on '" + tagGroup + "' has saving of " + str(saving))
                         if i < (nbCycles - 1) and tagGroup in theoricalSavings[currentSavingCycles[(i + 1)]['id']]:
-                            if isodate == '2017-08-11T02:00:00':
+                            if isodate == '2017-08-11T09:00:00':
                                 print("#> " + savingCycle['type'] + " SUBTRACTEDDDD " + str(theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]))
                             saving -= theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]
                         if CAU in self.costUnitsByDate[isodate]:
