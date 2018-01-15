@@ -96,11 +96,13 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
                             event_writer.writerow(eventRow)
 
                 # Trigger and write ShutDown event
-                # HardCoded 20 % rededuction
                 if currentTime.hour == hour_offOn[0] and currentRow['Product'] == 'ec2_instance':
                     resourceUsed[currentRow['UsageType']] /= instance_divider
-                    print(resourceUsed[currentRow['UsageType']])
+                    resourceUsed[currentRow['UsageType']] -= 1
                     currentRow['Cost'] = usageCost[currentRow['UsageType']] * resourceUsed[currentRow['UsageType']]
+                    if currentRow['Operation'] == operation[0]: # if RI on reduce the pricing
+                        currentRow['Cost'] = currentRow['Cost'] * ri_percent_multiplier
+
                     if isThisEventAlreadySet[currentRow['CAU']] == False:
                         isThisEventAlreadySet[currentRow['CAU']] = True
                         eventRow = {'Date' : currentTime.isoformat(), 'CAU': currentRow['CAU'], 'Type': eventType['shut']}
