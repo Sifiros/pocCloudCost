@@ -44,10 +44,14 @@ class GainCalculator():
         self.costUnitsByDate = {}
         datesWithCAU = {}
         datesList = []
+        listCAU = []
+
         for costItem in costDataItems:
             curDate = costItem['date'].isoformat()
+            if costItem['CAU'] not in listCAU:
+                listCAU.append(costItem['CAU'])
             if curDate not in datesWithCAU:
-                datesWithCAU[curDate] = [costItem['CAU']]
+                datesWithCAU[curDate] = list(listCAU)#[costItem['CAU']]
                 datesList.append({'isodate': curDate, 'costItemsCAU': datesWithCAU[curDate]})
             elif costItem['CAU'] not in datesWithCAU[curDate]:
                 datesWithCAU[curDate].append(costItem['CAU'])
@@ -222,7 +226,7 @@ class GainCalculator():
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         # real cost for given CAU + tagGroup juste before savingCycle beginning
                         theoricalCost = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAU, tagGroup, parse(isodate), savingCycle, savingCycleNb)
-                        if tagGroup in self.costUnitsByDate[isodate][CAU]: # TagGroup toujours présent à l'heure actuelle
+                        if CAU in self.costUnitsByDate[isodate] and tagGroup in self.costUnitsByDate[isodate][CAU]: # TagGroup toujours présent à l'heure actuelle
                             costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
                             costAndUsageDataItem['saving'] = 0
                             theoricalSavings[savingCycle['id']][tagGroup] = theoricalCost - costAndUsageDataItem['cost']
@@ -237,15 +241,16 @@ class GainCalculator():
                 for savingCycle in currentSavingCycles:
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         saving = theoricalSavings[savingCycle['id']][tagGroup]
-                        if (savingCycle['type'] == 'iops' or savingCycle['type'] == 'reserved_instance') and isodate == '2017-08-12T09:00:00':
+                        if isodate == '2017-08-11T02:00:00':
                             print("#> " + savingCycle['type'] + " on '" + tagGroup + "' has saving of " + str(saving))
                         if i < (nbCycles - 1) and tagGroup in theoricalSavings[currentSavingCycles[(i + 1)]['id']]:
-                            if (savingCycle['type'] == 'iops' or savingCycle['type'] == 'reserved_instance') and isodate == '2017-08-12T09:00:00':
+                            if isodate == '2017-08-11T02:00:00':
                                 print("#> " + savingCycle['type'] + " SUBTRACTEDDDD " + str(theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]))
                             saving -= theoricalSavings[currentSavingCycles[(i + 1)]['id']][tagGroup]
-                        costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup] if tagGroup in self.costUnitsByDate[isodate][CAU] else False
-                        if costAndUsageDataItem:
-                            costAndUsageDataItem['saving'] += saving
+                        if CAU in self.costUnitsByDate[isodate]:
+                            costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup] if tagGroup in self.costUnitsByDate[isodate][CAU] else False
+                            if costAndUsageDataItem:
+                                costAndUsageDataItem['saving'] += saving
                         savingCycle['saving'] += saving
                         result['savings'].append({
                             'CAU': CAU,
