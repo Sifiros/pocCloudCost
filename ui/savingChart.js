@@ -136,7 +136,8 @@ function prepareChartConfig(chartTitle, allDatasets, excludeDatasets = [], lines
 					scaleLabel: {
 						display: true,
 						labelString: 'Date'
-					}
+					},
+					stacked: true
 				}],
 				yAxes: [{
 					display: true,
