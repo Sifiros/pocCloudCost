@@ -153,6 +153,9 @@ class GainCalculator():
             tagGroupsList.add(tagGroup)
         return tagGroupsList
 
+    def projectTheoricalCost(self, baseCost, shiftHours):
+        return (baseCost * 1 ** shiftHours)
+
     def getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(self, CAUId, TagGroup, dateTime, savingCycle, i):
         if 'theoricalCost' not in savingCycle:
             savingCycle['theoricalCost'] = {}
@@ -185,9 +188,9 @@ class GainCalculator():
             i2 -= 1
 
         if theoricalCostUnit is False:
-            savingCycle['theoricalCost'][TagGroup] = 0
-            return 0
-        savingCycle['theoricalCost'][TagGroup] = theoricalCostUnit
+            savingCycle['theoricalCost'][TagGroup] = lambda date: 0
+            return savingCycle['theoricalCost'][TagGroup]
+        savingCycle['theoricalCost'][TagGroup] = lambda date : theoricalCostUnit if date is False else self.projectTheoricalCost(theoricalCostUnit, ((date - savingCycle['startDate']).seconds) / 3600)
         return savingCycle['theoricalCost'][TagGroup]
 
     def getSavings(self):
@@ -221,6 +224,7 @@ class GainCalculator():
                     for tagGroup in tagGroupsByCycle[savingCycle['id']]:
                         # real cost for given CAU + tagGroup juste before savingCycle beginning
                         theoricalCost = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAU, tagGroup, parse(isodate), savingCycle, savingCycleNb)
+                        theoricalCost = theoricalCost(parse(isodate))
                         if CAU in self.costUnitsByDate[isodate] and tagGroup in self.costUnitsByDate[isodate][CAU]: # TagGroup toujours présent à l'heure actuelle
                             costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
                             costAndUsageDataItem['saving'] = 0
