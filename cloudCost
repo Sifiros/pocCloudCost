@@ -23,7 +23,6 @@ def main():
     if PRINT:
         calculator.printCurrentScope()
 
-    calculator.processEvents()
     savings = calculator.getSavings()
     
     if PRINT:
