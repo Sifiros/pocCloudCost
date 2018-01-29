@@ -111,7 +111,7 @@ class GainCalculator():
 
     # Création des event scopes (start date & endDate liés par un meme type d'event)
     def processEvents(self):
-        eventCyclesMapping = { # each cycle type associated with its start / end event name
+        eventCyclesMapping = { # each cycle type associated with its start / end event name. False end event = one shot cycle
             'offon': ('reStart', 'Shutdown'),
             'iops': ('increase_iops', 'decrease_iops'),
             'destroy_ebs_volume': ('destroy_ebs_volume', False),
