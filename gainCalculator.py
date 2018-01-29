@@ -38,9 +38,9 @@ class GainCalculator():
             self.theoricalCosts[tagGroup] = cost
 
         def getTheoricalCost(self, tagGroup, date):
-            # ((date - savingCycle.startDate).seconds) / 3600
-            calculator = self.gainCalculator.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(self.CAUId, tagGroup, date, self, self.depth)
-            return calculator
+            timeShift = ((date - self.startDate).seconds) / 3600
+            theoricalCost = self.gainCalculator.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(self.CAUId, tagGroup, date, self, self.depth)
+            return theoricalCost * (1 ** timeShift)
 
     nextId = 0
     costs = []
@@ -111,7 +111,7 @@ class GainCalculator():
 
     # Création des event scopes (start date & endDate liés par un meme type d'event)
     def processEvents(self):
-        eventCyclesMapping = {
+        eventCyclesMapping = { # each cycle type associated with its start / end event name
             'offon': ('reStart', 'Shutdown'),
             'iops': ('increase_iops', 'decrease_iops'),
             'destroy_ebs_volume': ('destroy_ebs_volume', False),
@@ -157,18 +157,19 @@ class GainCalculator():
         tagGroupsList = set()
         theoricalDate = savingCycle.startDate - timedelta(hours=1)
         i = 0
+        # In case of missing datas ... Is it rly worth ? 
         while theoricalDate.isoformat() not in self.costUnitsByDate:
             if i > 23:
                 return tagGroupsList
             theoricalDate -= timedelta(hours=1)
             i += 1
-        # current tag groups
+        # retrieve tagGroups at this exact dateTime
         listCAU = self.costUnitsByDate[dateTime.isoformat()]
         if CAUId in listCAU:
             tagGroupsDict = listCAU[CAUId]
             for tagGroup in tagGroupsDict:
                 tagGroupsList.add(tagGroup)
-        # Add saving cycle tag groups
+        # tagGroups already linked to the savingCycle (but not necessarily there atm)
         for tagGroup in savingCycle.theoricalCosts:
             tagGroupsList.add(tagGroup)
         # look for finished tag groups
@@ -181,7 +182,7 @@ class GainCalculator():
         return tagGroupsList
 
     def getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(self, CAUId, TagGroup, dateTime, savingCycle, i):
-        if TagGroup in savingCycle.theoricalCosts:
+        if TagGroup in savingCycle.theoricalCosts: # theorical cost already stored
             # Synchronize (check if current cycle parent just ended)
             lastDate = (dateTime - timedelta(hours = 1)).isoformat()
             if CAUId in self.savingCyclesByDate[lastDate] and len(self.savingCyclesByDate[lastDate][CAUId]) > (i + 1) and \
@@ -221,29 +222,24 @@ class GainCalculator():
     def getSavings(self):
         self.processEvents()
         # sortie de la fonction : 
-        result = { 
-            "savings": [],
-            "costs": [],
-            "savingCycles": [],
-            "eventNames": []
-        }
-        # Also sets self.costUnitsByDate : 
+        result = { "savings": [], "costs": [], "savingCycles": [], "eventNames": [] }
+        # This call also sets self.costUnitsByDate : 
         sortedDates = self.getSortedDatesWithCostsCAU(self.costs)
         self.savingCyclesByDate = self.mapSortedDatesToSavingCycles(sortedDates, self.eventScopes)
-        lastSavingCycles = {} # contains saving cycles of last datetime, by CAU
-        for dateTime in sortedDates:
+        for dateTime in sortedDates: # loop over each dates sorted
             isodate = dateTime['isodate']
             for CAU in dateTime['costItemsCAU']: # every CAU containing cost items at this datetime
                 currentSavingCycles = self.savingCyclesByDate[isodate][CAU] if CAU in self.savingCyclesByDate[isodate] else []
                 theoricalSavings = {} # savings sorted by cycleId then tagGroup
                 tagGroupsByCycle = {} # tagGroups sorted by cycleId
                 savingCycleNb = 0
+
                 for savingCycle in currentSavingCycles:
                     if savingCycle.depth == -1:
                         result['savingCycles'].append(savingCycle)
                     savingCycle.depth = savingCycleNb
                     if savingCycle.eventType not in result['eventNames']:
-                        result['eventNames'].append(savingCycle.eventType)
+                        result['eventNames'].append(savingCycle.eventType) # Just for the sake of output process
                     theoricalSavings[savingCycle._id] = {}
                     # list of tagGroups at this CAU + datetime, whether being OR would have been being effective without savingCycle action
                     tagGroupsByCycle[savingCycle._id] = self.getTheoriticalTagGroups_IfCostSavingActionHadNotBeenConducted(CAU, parse(isodate), savingCycle)
@@ -286,8 +282,6 @@ class GainCalculator():
                             'savingCycleId': savingCycle._id, # On associe l'id du saving cycle au costItem
                         })
                     i += 1
-                # calculation end ; store current saving cycles
-                lastSavingCycles[CAU] = currentSavingCycles
             # FIN boucle sur chaque CAU pour l'heure actuelle. On ajoute au résultat chaque coût traité
             addedTagGroups = {}
             for CAU in self.costUnitsByDate[isodate]:
