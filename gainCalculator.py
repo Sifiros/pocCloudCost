@@ -35,7 +35,7 @@ class GainCalculator():
             self.depth = -1
 
         def getTheoricalCost(self, tagGroup, date):
-            timeShift = ((date - self.startDate).seconds) / 3600
+            timeShift = (((date - self.startDate).seconds) / 3600) + 1
             theoricalCost = self.gainCalculator.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(self.CAUId, tagGroup, date, self, self.depth)
             return theoricalCost * (1 ** timeShift)
 
