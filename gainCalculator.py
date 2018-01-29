@@ -21,15 +21,15 @@ class GainCalculator():
         theoricalCosts = {}
         depth = -1
         _id = 0
-        effectiveCycle = True
+        activeCycle = True
 
-        def __init__(self, gainCalculator, startDate, eventType, CAUId, cycleId, effectiveCycle):
+        def __init__(self, gainCalculator, startDate, eventType, CAUId, cycleId, activeCycle):
             self.gainCalculator = gainCalculator
             self.startDate = startDate
             self.eventType = eventType
             self.CAUId = CAUId
             self._id = cycleId
-            self.effectiveCycle = effectiveCycle
+            self.activeCycle = activeCycle
             self.theoricalCosts = {}
             self.saving = 0
             self.depth = -1
@@ -97,7 +97,7 @@ class GainCalculator():
             cyclesMap[isodate] = {}
 
             for cycle in savingCycles:
-                if ts >= cycle.startDate.timestamp() and ts < cycle.endDate.timestamp() and cycle.effectiveCycle:
+                if ts >= cycle.startDate.timestamp() and ts < cycle.endDate.timestamp() and cycle.activeCycle:
                     if cycle.CAUId not in cyclesMap[isodate]:
                         cyclesMap[isodate][cycle.CAUId] = []
                     cyclesMap[isodate][cycle.CAUId].append(cycle)
@@ -127,7 +127,7 @@ class GainCalculator():
                     cycleId = cycleType + '_' + cur['CAU']
                     effectiveSavingEvent = cycleEvents[1] == False or cycleEvents[1] == cur['type']
                     # can't handle 2 successive same event of the same cycle (except for one shot event)
-                    if cycleId in curScopes and curScopes[cycleId].effectiveCycle == effectiveSavingEvent:
+                    if cycleId in curScopes and curScopes[cycleId].activeCycle == effectiveSavingEvent:
                         print("Events processing error : can't handle 2 successive start or end without corresponding start event")
                         break
 
@@ -142,7 +142,7 @@ class GainCalculator():
                     # store new cycle start event (not in one shot case)
                     if cycleEvents[1] != False:
                         if newScope: # we just ended a cycle : update startDate / endDate
-                            start = self.SavingCycle(self, newScope.endDate, newScope.eventType, newScope.CAUId, cur['id'], (not newScope.effectiveCycle))
+                            start = self.SavingCycle(self, newScope.endDate, newScope.eventType, newScope.CAUId, cur['id'], (not newScope.activeCycle))
                         curScopes[cycleId] = start
                     break
             if newScope:
@@ -248,7 +248,7 @@ class GainCalculator():
                         theoricalCost = savingCycle.getTheoricalCost(tagGroup, parse(isodate))
                         # if isodate in checklist and (cycleschecklist is False or savingCycle.eventType in cycleschecklist) and \
                         #     (tagschecklist is False or tagGroup in tagschecklist):
-                        #     print("{} depth {} (effective {}) has theorical cost of {} for {}".format(savingCycle.eventType, savingCycle.depth, savingCycle.effectiveCycle, theoricalCost, tagGroup))
+                        #     print("{} depth {} (effective {}) has theorical cost of {} for {}".format(savingCycle.eventType, savingCycle.depth, savingCycle.activeCycle, theoricalCost, tagGroup))
                         if CAU in self.costUnitsByDate[isodate] and tagGroup in self.costUnitsByDate[isodate][CAU]: # TagGroup toujours présent à l'heure actuelle
                             costAndUsageDataItem = self.costUnitsByDate[isodate][CAU][tagGroup]
                             costAndUsageDataItem['saving'] = 0
@@ -280,6 +280,7 @@ class GainCalculator():
                             'type': savingCycle.eventType,
                             'saving': saving,
                             'savingCycleId': savingCycle._id, # On associe l'id du saving cycle au costItem
+                            'depth': i
                         })
                     i += 1
             # FIN boucle sur chaque CAU pour l'heure actuelle. On ajoute au résultat chaque coût traité
@@ -331,5 +332,5 @@ class GainCalculator():
     def printEventScopes(self):
         print('----------- Events scopes : ')
         for cur in self.eventScopes:
-            print("startDate: {}, endDate: {}, type: {}, CAU: {}, effective: {}".format(cur.startDate, cur.endDate, cur.eventType, cur.CAUId, cur.effectiveCycle))
+            print("startDate: {}, endDate: {}, type: {}, CAU: {}, effective: {}".format(cur.startDate, cur.endDate, cur.eventType, cur.CAUId, cur.activeCycle))
         print('')
