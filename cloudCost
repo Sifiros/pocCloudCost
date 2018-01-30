@@ -5,42 +5,146 @@ from gainCalculator import GainCalculator
 from dateutil.parser import *
 from datetime import *
 import json
+import pandas as pd
 import sys
+import argparse
 
-def printEventTypeFromSavings(savings):
-    for saving in savings:
-        print(' SAVING = ' + str(saving))
+def parse_filter_opt(opt, filterType, out):
+    for cur in opt:
+        split = cur.split(':')
+        if len(split) < 2:
+            return False   
+        fields = split[1].split(',')
+        if split[0] not in out:
+            out[split[0]] = {filterType: fields}
+        else:
+            out[split[0]][filterType] = fields
+
+    return True
+
+def merge_rows(datas, mergeBy):
+    first = False
+    for v in datas:
+        if first is False:
+            first = v
+            if len(mergeBy) < 1:
+                return first
+        else:
+            for key in mergeBy:
+                first[key] += v[key]
+    return first
+
+def group_rows(datas, groupBy, mergeBy):
+    data = pd.DataFrame(datas)
+    result = {}
+    data = data.groupby(groupBy)
+    groupSizes = data.size().to_dict()
+
+    for group, df in data: # group : tuple / df : dataframe
+        nbRows = groupSizes[group]
+        lvl = result
+        lastkey = '' # group last key which will store datas 
+        if isinstance(group, tuple): # not a tuple if 1 value
+            for idx, key in enumerate(group):
+                if key not in lvl and idx < (len(group) - 1):
+                    lvl[key] = {}
+                if idx == (len(group) - 1):
+                    lastkey = key
+                else:
+                    lvl = lvl[key]
+        else:
+            lastkey = group
+
+        rows = [{} for _ in range(nbRows)]
+        dfDict = dict(df)
+        for field in df: # each field name
+            i = 0
+            for val in dfDict[field]: # each value for this field
+                rows[i][field] = val
+                i += 1
+        if mergeBy is not None:
+            rows = merge_rows(rows, mergeBy)
+        lvl[lastkey] = rows
+    return result
+
+def apply_filters(datas, filters):
+    if filters['group_by'] is not None:
+        return group_rows(datas, filters['group_by'], filters['merge_by'] if 'merge_by' in filters else None)
+    if filters['merge_by'] is not None:
+        return merge_rows(datas, filters['merge_by'])
+    return datas
 
 def main():
-    costsFilepath = sys.argv[1] if len(sys.argv) > 1 else "./teevity_format/teevity_savings.csv"
-    eventsFilepath = sys.argv[2] if len(sys.argv) > 2 else "./teevity_format/teevity_events.csv"
+    parser = argparse.ArgumentParser(
+        "Provided cloud cost & event datas, compute then output in 3 fields of json 'raw' result : savings, savingCycles, costs, eventNames. \n "
+        "GROUP_BY and MERGE_BY options need to start by one of these 3 fields followed by ':' in order to filter on the right field. \n "
+        "ex: ./cloudCost --group-by=savings:date,type --merge-by=savings:saving,depth \t #Group savings by unique date then event type, before merging all of their saving in one row\n")
+    parser.add_argument("--group-by", type=str, action="append", help="Group saving datas by some columns of given fieldname. Output result in 'summarize'")
+    parser.add_argument("--merge-by", type=str, action="append", help="Merge saving datas by some columns of given fieldname. Output result in 'summarize'")
+    parser.add_argument("--no-raw-fields", action="store_true", help="Disable output of whole datas set computed by the algorithm in 'raw' field.")
+    parser.add_argument("--only-raw-fields", type=str, help="Output only raw fields indicated by this option")
+    parser.add_argument("--sum-by-hour", action="store_true", help="Same as --group-by=savings:date,type --merge-by=savings:saving,depth --group-by=costs:date --merge-by=costs:cost,saving")
+    parser.add_argument("--sum-by-cau", action="store_true", help="Same as --group-by=savingCycles:type,cau")
+    parser.add_argument("--costs-file", help="Path of input cost datas file. Must be used with --events-file")
+    parser.add_argument("--events-file", help="Path of input cost datas file. Must be used with --costs-file")
+
+    args = parser.parse_args()    
+    filters = {} if args.group_by != None or args.merge_by != None else False
+    if args.sum_by_hour is True:
+        if filters is False:
+            filters = {}
+        filters['savings'] = {'group_by': ['date', 'type'], 'merge_by': ['saving', 'depth']}
+        filters['costs'] = {'group_by': ['date'], 'merge_by': ['cost', 'saving']}
+    if args.sum_by_cau:
+        if filters is False:
+            filters = {}
+        filters['savingCycles'] = {'group_by': ['type', 'CAU']}
+
+    if args.group_by != None:
+        if parse_filter_opt(args.group_by, 'group_by', filters) is False:
+            sys.stderr.write("Please specify relevant fieldname with --group-by\n")
+            parser.print_help() 
+            return
+    if args.merge_by != None:
+        if parse_filter_opt(args.merge_by, 'merge_by', filters) is False:
+            sys.stderr.write("Please specify relevant fieldname with --merge-by\n")
+            parser.print_help() 
+            return
+
+    if (args.costs_file and not args.events_file) or (args.events_file and not args.costs_file):
+        sys.stderr.write("--costs-file and --events-file options MUST be used together.\n")
+        return 
+    costsFilepath = args.costs_file if args.costs_file is not None else "./teevity_format/teevity_savings.csv"
+    eventsFilepath = args.events_file if args.events_file is not None else "./teevity_format/teevity_events.csv"
 
     api = TeevityAPI(costsFilepath, eventsFilepath)
-    PRINT = True#False if len(sys.argv) > 1 and sys.argv[1] == "--json" else True
-    # try:
     calculator = GainCalculator(api.GetCostDatas(), api.GetEvents())
-    # return 
-    if PRINT:
-        calculator.printCurrentScope()
-
-    savings = calculator.getSavings()
+    out = {}
+    try:
+        raw = calculator.getSavings()
+    except Exception as error:
+         print("An error occured %s" % (error), file=sys.stderr)
+         return (-1)
+    except KeyboardInterrupt:
+         print ("\nSIGINT caught, interrupt program", file=sys.stderr)
+         return (-1)
+    except:
+         print ("Unknown error occured", file=sys.stderr)
+         return (-1)
     
-    if PRINT:
-        calculator.printEventScopes()
+    if filters is not False:
+        out['summarize'] = {}
+        for field in filters:
+            out['summarize'][field] = apply_filters(raw[field], filters[field])
+    if args.no_raw_fields is False:
+        out['raw'] = raw
+        if args.only_raw_fields is not None:
+            only_fields = args.only_raw_fields.split(',')
+            skip = list(filter(lambda k: k not in only_fields, raw.keys()))
+            for k in skip:
+                raw.pop(k)
 
-    if PRINT:
-        print('------------------ Savings by events : ')
-        printEventTypeFromSavings(savings['savings'])
-    else:
-        print(json.dumps(savings))
-
-    # except Exception as error:
-    #      print("An error occured %s" % (error), file=sys.stderr)
-    #      return (-1)
-    # except KeyboardInterrupt:
-    #      print ("\nSIGINT caught, interrupt program", file=sys.stderr)
-    # except:
-    #      print ("Unknown error occured", file=sys.stderr)
+    print(json.dumps(out))
     return (0)
 
 if __name__ == "__main__":

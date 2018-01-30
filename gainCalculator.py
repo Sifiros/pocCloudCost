@@ -226,12 +226,12 @@ class GainCalculator():
         sortedDates = self.getSortedDatesWithCostsCAU(self.costs) # also sets self.costUnitsByDate
         self.mapSortedDatesToSavingCycles(sortedDates, self.eventScopes) # sets self.savingCyclesByDate
 
-        for dateTime in sortedDates: # loop over each dates sorted
+        for dateTime in sortedDates: # loop over each sorted dates
             isodate = dateTime['isodate']
             for CAU in dateTime['costItemsCAU']: # every CAU containing cost items at this datetime
                 currentSavingCycles = self.getSavingCyclesAt(isodate, CAU)
-                theoricalSavings = {} # savings sorted by cycleId then tagGroup
-                tagGroupsByCycle = {} # tagGroups sorted by cycleId
+                theoricalSavings = {} # theorical savings group by cycleId then tagGroup (theoricalSavings[cycleId][tagGroup] = int)
+                tagGroupsByCycle = {} # tagGroups group by cycleId
                 savingCycleNb = 0
 
                 for savingCycle in currentSavingCycles:
@@ -307,30 +307,9 @@ class GainCalculator():
             'saving': scope.saving,
             'id': scope._id
         }), result['savingCycles']))
-        self.storeToFile(result)
         return result
 
     def storeToFile(self, data):
         with open('./ui/eventSavings.json', 'w') as fileToWrite:
             fileToWrite.write('datas = ' + json.dumps(data))
         fileToWrite.close()
-
-    #
-    # Debug Print Functions
-    #
-
-    def printCurrentScope(self):
-        print('----------- Events : (' + str(len(self.events)) + ')')
-        for x in self.events:
-            print(x)
-        print()
-        # print('----------- Costs : (' + str(len(self.costs)) + ')')
-        # for x in self.costs:
-        #     print(x)
-        print()
-
-    def printEventScopes(self):
-        print('----------- Events scopes : ')
-        for cur in self.eventScopes:
-            print("startDate: {}, endDate: {}, type: {}, CAU: {}, effective: {}".format(cur.startDate, cur.endDate, cur.eventType, cur.CAUId, cur.activeCycle))
-        print('')
