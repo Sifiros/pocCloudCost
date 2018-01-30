@@ -87,6 +87,7 @@ def main():
     parser.add_argument("--sum-by-cau", action="store_true", help="Same as --group-by=savingCycles:type,cau")
     parser.add_argument("--costs-file", help="Path of input cost datas file. Must be used with --events-file")
     parser.add_argument("--events-file", help="Path of input cost datas file. Must be used with --costs-file")
+    parser.add_argument("-o", "--output-file", help="Path of outputfile. 'datas = ' is appended on file beginning")
 
     args = parser.parse_args()    
     filters = {} if args.group_by != None or args.merge_by != None else False
@@ -144,7 +145,10 @@ def main():
             for k in skip:
                 raw.pop(k)
 
-    print(json.dumps(out))
+    if args.output_file is None:
+        print(json.dumps(out))
+    else:
+        calculator.storeToFile(out, args.output_file)
     return (0)
 
 if __name__ == "__main__":

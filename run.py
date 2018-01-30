@@ -3,46 +3,36 @@
 import sys
 from os import system
 
-dataType = {'ri': "cp ./teevity_format/for_poc/ri_only_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/ri_only_savings.csv ./teevity_format/teevity_savings.csv",
-            'no_event':"cp ./teevity_format/for_poc/void_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/void_savings.csv ./teevity_format/teevity_savings.csv",
-            'both':"cp ./teevity_format/for_poc/both_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/both_savings.csv ./teevity_format/teevity_savings.csv",
-            'cloudC':"cp ./teevity_format/for_poc/cloudC_only_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/cloudC_only_savings.csv ./teevity_format/teevity_savings.csv",
-            'same_time':"cp ./teevity_format/for_poc/event_same_time_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/event_same_time_savings.csv ./teevity_format/teevity_savings.csv",
-            'iops_iner':"cp ./teevity_format/for_poc/iops_iner_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/iops_iner_savings.csv ./teevity_format/teevity_savings.csv",
-            'iops_outer':"cp ./teevity_format/for_poc/iops_outer_events.csv ./teevity_format/teevity_events.csv && cp ./teevity_format/for_poc/iops_outer_savings.csv ./teevity_format/teevity_savings.csv",
-#            'oneweek':"cp ./api/mocks/oneweek_cost.py ./api/costs.py && cp ./api/mocks/oneweek_event.py ./api/events.py",
-#            'sametime':"cp ./teevity_format/for_poc/ri_only_events ./teevity_format/teevity_events && cp ./teevity_format/for_poc/ri_only_savings ./teevity_format/teevity_savings"
-#            'ended_onoff':"cp ./api/mocks/ended_onoff_cost.py ./api/costs.py && cp ./api/mocks/ended_onoff_event.py ./api/events.py",
-#            '3events':"cp ./api/mocks/3events_cost.py ./api/costs.py && cp ./api/mocks/3events_event.py ./api/events.py",
-            }
+CSV_PATH = './teevity_format/csv/'
+mocks = {
+    'ri': (CSV_PATH + 'ri_only_savings.csv', CSV_PATH + 'ri_only_events.csv'),
+    'no_event': (CSV_PATH + 'void_savings.csv', CSV_PATH + 'void_events.csv'),
+    'both': (CSV_PATH + 'both_savings.csv', CSV_PATH + 'both_events.csv'),
+    'cloudC': (CSV_PATH + 'cloudC_only_savings.csv', CSV_PATH + 'cloudC_only_events.csv'),
+    'same_time': (CSV_PATH + 'event_same_time_savings.csv', CSV_PATH + 'event_same_time_events.csv'),
+    'iops_iner': (CSV_PATH + 'iops_iner_savings.csv', CSV_PATH + 'iops_iner_events.csv'),
+    'iops_outer': (CSV_PATH + 'iops_outer_savings.csv', CSV_PATH + 'iops_outer_events.csv'),
+    'tiny1': (CSV_PATH + 'simple_costs.csv', CSV_PATH + 'simple_events.csv'),
+    'tiny2': (CSV_PATH + '2parentsdead.csv', CSV_PATH + '2parentsdead.csv'),   
+}
 
 def usage():
-    print("Usage : {} dataType\n".format(sys.argv[0]))
-    sys.stdout.write("dataType can be :")
-    for x in dataType:
-        sys.stdout.write(' - ' + x)
+    print("Usage : {} mockName\n".format(sys.argv[0]))
+    sys.stdout.write("mockName can be : " + str(list(mocks.keys())))
     print()
 
-def after_copy(ret):
-    if ret == 0:
-        ret = system("python3 ./cloudCost > /dev/null")
-        if ret == 0:
-            system("chromium ./ui/ui.html || firefox ./ui/ui.html || chrome ./ui/ui.html")
-    else:
-        print("Error: some files may be missing")
-
-
+def exec(files):
+    cmd = "./cloudCost --costs-file {} --events-file {} --sum-by-hour --sum-by-cau --only-raw-fields eventNames -o ui/datas.json".format(files[0], files[1])
+    return system(cmd)
 
 if len(sys.argv) < 2:
     usage()
     exit(1)
 
 option = sys.argv[1]
-
-for x in dataType:
-    if x == option:
-        ret = system(dataType[x])
-        after_copy(ret)
-        exit(0)
+files = mocks[option]
+if exec(files) == 0:
+    system("chromium ./ui/ui.html || firefox ./ui/ui.html || chrome ./ui/ui.html")
+exit(0)
 
 usage()

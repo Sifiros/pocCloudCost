@@ -309,7 +309,7 @@ class GainCalculator():
         }), result['savingCycles']))
         return result
 
-    def storeToFile(self, data):
-        with open('./ui/eventSavings.json', 'w') as fileToWrite:
+    def storeToFile(self, data, path):
+        with open(path, 'w') as fileToWrite:
             fileToWrite.write('datas = ' + json.dumps(data))
         fileToWrite.close()
