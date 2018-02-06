@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-from TeevityAPI import TeevityAPI
-from gainCalculator import GainCalculator
+from savingCalculator.TeevityAPI import TeevityAPI
+from savingCalculator.SavingCalculator import SavingCalculator
 from dateutil.parser import *
 from datetime import *
 import json
@@ -78,7 +78,7 @@ def main():
     parser = argparse.ArgumentParser(
         "Provided cloud cost & event datas, compute then output in 3 fields of json 'raw' result : savings, savingCycles, costs, eventNames. \n "
         "GROUP_BY and MERGE_BY options need to start by one of these 3 fields followed by ':' in order to filter on the right field. \n "
-        "ex: ./cloudCost --group-by=savings:date,type --merge-by=savings:saving,depth \t #Group savings by unique date then event type, before merging all of their saving in one row\n")
+        "ex: ./calcSavings --group-by=savings:date,type --merge-by=savings:saving,depth \t #Group savings by unique date then event type, before merging all of their saving in one row\n")
     parser.add_argument("--group-by", type=str, action="append", help="Group saving datas by some columns of given fieldname. Output result in 'summarize'")
     parser.add_argument("--merge-by", type=str, action="append", help="Merge saving datas by some columns of given fieldname. Output result in 'summarize'")
     parser.add_argument("--no-raw-fields", action="store_true", help="Disable output of whole datas set computed by the algorithm in 'raw' field.")
@@ -115,11 +115,11 @@ def main():
     if (args.costs_file and not args.events_file) or (args.events_file and not args.costs_file):
         sys.stderr.write("--costs-file and --events-file options MUST be used together.\n")
         return 
-    costsFilepath = args.costs_file if args.costs_file is not None else "./teevity_format/csv/generated_costs.csv"
-    eventsFilepath = args.events_file if args.events_file is not None else "./teevity_format/csv/generated_events.csv"
+    costsFilepath = args.costs_file if args.costs_file is not None else "./dataMocks/csv/generated_costs.csv"
+    eventsFilepath = args.events_file if args.events_file is not None else "./dataMocks/csv/generated_events.csv"
 
     api = TeevityAPI(costsFilepath, eventsFilepath)
-    calculator = GainCalculator(api.GetCostDatas(), api.GetEvents())
+    calculator = SavingCalculator(api.GetCostDatas(), api.GetEvents())
     out = {}
     try:
         raw = calculator.getSavings()

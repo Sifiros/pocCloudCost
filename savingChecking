@@ -97,8 +97,8 @@ def lookForInconsistencies(dates):
 
 def main():
 	datas = json.loads(sys.stdin.read())
-	events = datas['savings']
-	costs = datas['costs']
+	events = datas['raw']['savings']
+	costs = datas['raw']['costs']
 	period = getPeriod(costs)
 	freq = round((len(costs) / (period['duration'] * 24)))
 	print(str(len(costs)) +" cost metrics loaded between "+ period['start'].strftime("%Y-%m-%d %H:%M") + 

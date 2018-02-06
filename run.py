@@ -3,7 +3,7 @@
 import sys
 from os import system
 
-CSV_PATH = './teevity_format/csv/'
+CSV_PATH = './dataMocks/csv/'
 mocks = {
     'ri': (CSV_PATH + 'ri_only_savings.csv', CSV_PATH + 'ri_only_events.csv'),
     'no_event': (CSV_PATH + 'void_savings.csv', CSV_PATH + 'void_events.csv'),
@@ -23,7 +23,7 @@ def usage():
     print()
 
 def exec(files):
-    cmd = "./cloudCost --costs-file {} --events-file {} --sum-by-hour --sum-by-cau --only-raw-fields eventNames -o ui/datas.json".format(files[0], files[1])
+    cmd = "./calcSavings --costs-file {} --events-file {} --sum-by-hour --sum-by-cau --only-raw-fields eventNames -o ui/datas.json".format(files[0], files[1])
     return system(cmd)
 
 if len(sys.argv) < 2:
