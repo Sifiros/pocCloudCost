@@ -13,7 +13,8 @@ mocks = {
     'iops_iner': (CSV_PATH + 'iops_iner_savings.csv', CSV_PATH + 'iops_iner_events.csv'),
     'iops_outer': (CSV_PATH + 'iops_outer_savings.csv', CSV_PATH + 'iops_outer_events.csv'),
     'tiny1': (CSV_PATH + 'simple_costs.csv', CSV_PATH + 'simple_events.csv'),
-    'tiny2': (CSV_PATH + '2parentsdead_costs.csv', CSV_PATH + '2parentsdead_events.csv'),   
+    'tiny2': (CSV_PATH + '2parentsdead_costs.csv', CSV_PATH + '2parentsdead_events.csv'),
+    'generated': (CSV_PATH + 'generated_costs.csv', CSV_PATH + 'generated_events.csv')
 }
 
 def usage():

@@ -10,8 +10,8 @@ import random
 
 # gérer par nombre d'instance et séparer ec2 et ebs
 
-fname = "teevity_savings.csv"
-efname = "teevity_events.csv"
+costs_fname = "./csv/generated_costs.csv"
+events_fname = "./csv/generated_events.csv"
 
 CAUs = ['PROD/ProjectA/Frontend', 'PROD/ProjectA/Backend', 'PROD/ProjectB/Frontend', 'PROD/ProjectB/Backend', \
         'DEV/ProjectA/Frontend', 'DEV/ProjectA/Backend', 'DEV/ProjectB/Frontend', 'DEV/ProjectB/Backend']
@@ -67,11 +67,13 @@ def get_object_list():
     CAUListSet = set(usedCAUList)
     return rowList, CAUListSet
 
-def start_writing(filename, fieldnames, event_filename, event_fieldnames):
-    with open(filename, 'a+') as wfile:
-        event_file = open(event_filename, 'a+')
+def start_writing(costs_filename, costs_fieldnames, event_filename, event_fieldnames):
+    with open(costs_filename, 'w') as cost_file:
+        cost_file.write(','.join(costs_fieldnames) + "\n")
+        event_file = open(event_filename, 'w')
+        event_file.write(','.join(event_fieldnames) + "\n")
         event_writer = csv.DictWriter(event_file, event_fieldnames)
-        writer = csv.DictWriter(wfile, fieldnames)
+        writer = csv.DictWriter(cost_file, costs_fieldnames)
         rowList, usedCauSet = get_object_list()
         currentTime = parse(startDate)
 
@@ -152,17 +154,6 @@ def start_writing(filename, fieldnames, event_filename, event_fieldnames):
 
 random.seed(None)
 
-ret = system("cp ./save.csv ./teevity_savings.csv")
-ret2 = system("cp ./save_events.csv ./teevity_events.csv")
-file = open(fname, "rb")
-ev_file = open(efname, "rb")
-if ret == 0 and ret2 == 0:
-    try:
-        reader = csv.DictReader(file)
-        event_reader = csv.DictReader(ev_file)
-        fieldnames = reader.fieldnames
-        event_fieldnames = event_reader.fieldnames
-    finally:
-        file.close()
-        ev_file.close()
-        start_writing(fname, fieldnames, efname, event_fieldnames)
+costs_fieldnames = ['Date', 'CAU', 'Account', 'Region', 'Product', 'Operation', 'UsageType', 'Cost']
+events_fieldnames = ['Date', 'CAU', 'Type']
+start_writing(costs_fname, costs_fieldnames, events_fname, events_fieldnames)

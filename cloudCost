@@ -115,8 +115,8 @@ def main():
     if (args.costs_file and not args.events_file) or (args.events_file and not args.costs_file):
         sys.stderr.write("--costs-file and --events-file options MUST be used together.\n")
         return 
-    costsFilepath = args.costs_file if args.costs_file is not None else "./teevity_format/teevity_savings.csv"
-    eventsFilepath = args.events_file if args.events_file is not None else "./teevity_format/teevity_events.csv"
+    costsFilepath = args.costs_file if args.costs_file is not None else "./teevity_format/csv/generated_costs.csv"
+    eventsFilepath = args.events_file if args.events_file is not None else "./teevity_format/csv/generated_events.csv"
 
     api = TeevityAPI(costsFilepath, eventsFilepath)
     calculator = GainCalculator(api.GetCostDatas(), api.GetEvents())

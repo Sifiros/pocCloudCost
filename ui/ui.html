@@ -6,7 +6,6 @@
   crossorigin="anonymous"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
 <script type="text/javascript" src="./savingChart.js"></script>
-<script type="text/javascript" src="./horizontalLineChartPlugin.js"></script>
 <script type="text/javascript" src="./datas.json"></script>
 <style>
     canvas {
@@ -30,7 +29,6 @@
 <script>
 
     window.onload = function() {
-            registerPlugin('teevityChart');
             const eventTypes = datas.raw.eventNames
             var datasets = []
             const savings = datas.summarize.savings
