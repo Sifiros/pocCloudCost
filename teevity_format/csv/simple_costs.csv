@@ -6,16 +6,16 @@ Date,CAU,Account,Region,Product,Operation,UsageType,Cost
 2017-08-10T09:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,30
 2017-08-10T09:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,10
 
-2017-08-10T10:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,34
+2017-08-10T10:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,30
 2017-08-10T10:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,10
 
-2017-08-10T11:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,38
+2017-08-10T11:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,30
 2017-08-10T11:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,10
 
-2017-08-10T12:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,65.88
-2017-08-10T12:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,21.96
+2017-08-10T12:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,45
+2017-08-10T12:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,15
 
-2017-08-10T13:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,72.47
-2017-08-10T13:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,24.16
+2017-08-10T13:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,r3.8xlarge,45
+2017-08-10T13:00:00,DEV/ProjectA/Backend,492743284828,eu-west-1,ec2_instance,OnDemand,m4.2xlarge,15
 
 
