@@ -7,6 +7,7 @@
 
 from savingCalculator.DatasAggregate import DatasAggregate, SavingCycle
 import json
+from decimal import *
 from dateutil.parser import *
 import sys
 
@@ -56,11 +57,12 @@ class SavingChecking():
     def lookForInconsistencies(self, summarySavings):
         nbErrors = 0
         results = {}
+        getcontext().prec = 5
         for item in self.datas.sortedDatesWithCAU:
             isodate = item['isodate']
-            totalCost = 0.0
-            totalSaving = 0.0
-            totalTheoricalCost = 0.0
+            totalCost = Decimal(0)
+            totalSaving = Decimal(0)
+            totalTheoricalCost = Decimal(0)
 
             if isodate not in results:
                 results[isodate] = {}
@@ -76,21 +78,17 @@ class SavingChecking():
                     cost = self.datas.costUnitsByDate[isodate]
                     cost = cost[CAU][tagGroup]['cost'] if CAU in cost and tagGroup in cost[CAU] else False
                     curSaving = savings[CAU][tagGroup]
-                    # totalSaving += savings[CAU][tagGroup]
                     if cost is False: # saving d'un ancien tag group
-                        # print("saving : " + str(curSaving))
                         saving = {'theoricalCost': curSaving['saving'], 'cost': 0.00, 'saving': curSaving['saving']}
-                        totalTheoricalCost += float(curSaving['saving'])
-                        # totalCost += saving['saving']
+                        totalTheoricalCost += Decimal(curSaving['saving'])
                     else:
-                        # print("cur theorical cost of cost " + str(cost) + " : " + str(savingCycles[curSaving['depth']].getTheoricalCost(tagGroup, parse(isodate))))
-                        saving = {'theoricalCost': savingCycles[curSaving['depth']].getTheoricalCost(tagGroup, parse(isodate)), 'cost': float(0) if curSaving['saving'] < 0.000 else float(cost) , 'saving': curSaving['saving']}
-                        totalTheoricalCost += float(saving['saving'] + saving['cost'])
-                        totalCost += saving['cost']
+                        saving = {'theoricalCost': savingCycles[curSaving['depth']].getTheoricalCost(tagGroup, parse(isodate)), 'cost': 0 if curSaving['saving'] < 0.000 else cost, 'saving': curSaving['saving']}
+                        totalTheoricalCost += Decimal(saving['saving'] + saving['cost'])
+                        totalCost += Decimal(saving['cost'])
 
                     cur[tagGroup] = saving
                     self.checkItem(saving, isodate)
-                    totalSaving += saving['saving']
+                    totalSaving += Decimal(saving['saving'])
 
             costs = self.datas.costUnitsByDate[isodate]
             for CAU in costs:
@@ -100,15 +98,13 @@ class SavingChecking():
                 cur = cur[CAU]
                 for tagGroup in costs[CAU]:
                     if tagGroup not in cur:
-                        # print("no saving cycle")
                         cur[tagGroup] = {'theoricalCost': costs[CAU][tagGroup]['cost'], 'cost': costs[CAU][tagGroup]['cost'], 'saving': 0}
                         self.checkItem(cur[tagGroup], isodate)
-                        totalTheoricalCost += costs[CAU][tagGroup]['cost']
-                        totalCost += costs[CAU][tagGroup]['cost']
-                        # print("At {} : cost of {} without saving : {} ".format(isodate, tagGroup, costs[CAU][tagGroup]['cost']))
+                        totalTheoricalCost += Decimal(costs[CAU][tagGroup]['cost'])
+                        totalCost += Decimal(costs[CAU][tagGroup]['cost'])
 
-            tot = round((totalSaving + totalCost), 2)
-            theoricalTot = round(totalTheoricalCost, 2)
+            tot = totalSaving + totalCost
+            theoricalTot = totalTheoricalCost
             if tot != theoricalTot:
                 op = "lower" if tot < theoricalTot else "bigger"
                 print("On %s, sum of real cost and calculated saving (%.2f + %.2f = %.2f) is %s than unoptimized cost (%2.f) !" %
