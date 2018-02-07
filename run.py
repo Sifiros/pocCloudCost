@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 
 import sys
 from os import system
+import argparse
 
 CSV_PATH = './dataMocks/csv/'
 mocks = {
@@ -17,33 +18,27 @@ mocks = {
     'generated': (CSV_PATH + 'generated_costs.csv', CSV_PATH + 'generated_events.csv')
 }
 
-def usage():
-    print("Usage : {} mockName [ --test ]\n".format(sys.argv[0]))
-    sys.stdout.write("mockName can be : " + str(list(mocks.keys())))
-    print()
-
-def exec(files):
+def run_calc(files):
     cmd = "./calcSavings --costs-file {} --events-file {} --sum-by-hour --sum-by-cau --only-raw-fields eventNames -o ui/datas.json".format(files[0], files[1])
     return system(cmd)
 
 def run_test(files):
-    cmd = "./calcSavings --costs-file {} --events-file {} | ./savingChecking".format(files[0], files[1])
+    cmd = "./calcSavings --costs-file {} --events-file {} | ./savingChecking.py".format(files[0], files[1])
     return system(cmd)
 
-if len(sys.argv) < 2 or sys.argv[1] not in mocks:
-    usage()
-    exit(1)
-test = False
-if len(sys.argv) > 2:
-    if sys.argv[2] != '--test':
-        usage()
-        exit(1)
-    test = True
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("Easy interface to ./calcSavings usage.\nMocks: " + str(list(mocks.keys())) + "\n")
+    parser.add_argument("mock", metavar="MOCK", type=str, nargs=1, help="Indicate a mock to be tested")
+    parser.add_argument("--test", "-t", action="store_true", help="Only run test for specified mock")
 
-option = sys.argv[1]
-files = mocks[option]
-if test is True:
-    run_test(files)
-elif exec(files) == 0:
-    system("chromium ./ui/ui.html || firefox ./ui/ui.html || chrome ./ui/ui.html")
-exit(0)
+    args = parser.parse_args()
+    mock = args.mock[0]
+    if mock not in mocks:
+        parser.print_help() 
+        exit(1)
+    files = mocks[mock]
+    if args.test is True:
+        run_test(files)
+    elif run_calc(files) == 0:
+        system("chromium ./ui/ui.html || firefox ./ui/ui.html || chrome ./ui/ui.html")
+    exit(0)

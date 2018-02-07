@@ -2,7 +2,7 @@
 
 ##
 ## Sum up saving results, look for inconsistencies
-## Needs "./calcSavings" as input (run ./calcSavings | ./savingChecking)
+## Needs "./calcSavings" as input (run ./calcSavings | ./savingChecking.py)
 ##
 
 from savingCalculator.DatasAggregate import DatasAggregate, SavingCycle
@@ -11,6 +11,7 @@ from decimal import *
 from datetime import datetime
 from dateutil.parser import *
 import sys
+import unittest
 
 def totimestamp(dt, epoch=datetime(1970,1,1)):
     td = dt - epoch
@@ -53,7 +54,7 @@ class SavingChecking():
             print("> No inconsistency found !")
         else:
             print("\n\nFAILURE:\t%d (against %d datetimes) inconsistencies found." % (nbErrors, len(self.datas.sortedDatesWithCAU)))
-        return (0)
+        return (nbErrors)
 
     def checkItem(self, item, isodate):
         pass

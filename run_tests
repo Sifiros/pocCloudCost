@@ -1,0 +1,68 @@
+#!/bin/python2.7
+import sys
+from run import mocks
+import unittest
+from savingCalculator.TeevityAPI import TeevityAPI
+from savingCalculator.SavingCalculator import SavingCalculator
+from savingChecking import SavingChecking
+
+class TestMocks(unittest.TestCase):
+    def computeMock(self, mockName):
+        files = mocks[mockName]
+        api = TeevityAPI(files[0], files[1])
+        costs = api.GetCostDatas()
+        events = api.GetEvents()
+
+        calculator = SavingCalculator(costs, events)
+        return {'raw': calculator.getSavings()}
+
+    # def test_tiny1(self):
+    #     savingChecking = SavingChecking(self.computeMock('tiny1'))
+    #     nbErrors = savingChecking.run()
+    #     self.assertEqual(nbErrors, 0)
+
+    # def test_tiny2(self):
+    #     savingChecking = SavingChecking(self.computeMock('tiny2'))
+    #     nbErrors = savingChecking.run()
+    #     self.assertEqual(nbErrors, 0)
+
+    def test_both(self):
+        savingChecking = SavingChecking(self.computeMock('both'))
+        nbErrors = savingChecking.run()
+        self.assertEqual(nbErrors, 0)
+
+    def test_same_time(self):
+        savingChecking = SavingChecking(self.computeMock('same_time'))
+        nbErrors = savingChecking.run()
+        self.assertEqual(nbErrors, 0)
+
+def generateTestFunc(mockName):
+    def test(self):
+        print("Testing " + mockName + " ...")
+        savingChecking = SavingChecking(self.computeMock(mockName))
+        nbErrors = savingChecking.run()
+        self.assertEqual(nbErrors, 0)
+
+    return test    
+
+def appendNewMockTest(mockName):
+    # test_func = generateTestFunc(mockName)
+    test_func = lambda self : self.assertEqual(SavingChecking(self.computeMock(mockName)).run(), 0)
+    test_name = "test_{}".format(mockName)
+    setattr(TestMocks, test_name, test_func)
+    print("done " + mockName)
+
+def main():
+    # appendNewMockTest('tiny1')       
+    # appendNewMockTest('tiny2')    
+    # appendNewMockTest('same_time')    
+    # appendNewMockTest('both')    
+    # mocks2= {'cloudC': True, 'generated': True}#, 'iops_iner': True, 'iops_outer': True}
+    # for mockName in mocks2:
+    #     appendNewMockTest(mockName)
+
+    unittest.main()
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
