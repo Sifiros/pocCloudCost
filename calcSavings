@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2.7
 
 from savingCalculator.TeevityAPI import TeevityAPI
 from savingCalculator.SavingCalculator import SavingCalculator
@@ -124,15 +124,17 @@ def main():
     try:
         raw = calculator.getSavings()
     except Exception as error:
-         print("An error occured %s" % (error), file=sys.stderr)
+         sys.stderr.write("An error occured %s\n" % (error))
          return (-1)
     except KeyboardInterrupt:
-         print ("\nSIGINT caught, interrupt program", file=sys.stderr)
+         sys.stderr.write("\nSIGINT caught, interrupt program\n")
          return (-1)
     except:
-         print ("Unknown error occured", file=sys.stderr)
+         sys.stderr.write("Unknown error occured\n")
          return (-1)
     
+    out['dates'] = raw['dates']
+    raw.pop('dates')
     if filters is not False:
         out['summarize'] = {}
         for field in filters:

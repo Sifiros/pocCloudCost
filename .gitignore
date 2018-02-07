@@ -3,3 +3,4 @@ __pycache__
 api/costs.py
 api/events.py
 ui/eventSavings.json
+**.pyc

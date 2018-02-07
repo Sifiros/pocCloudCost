@@ -1,5 +1,10 @@
+# coding=utf8
 from dateutil.parser import *
 from datetime import *
+
+def totimestamp(dt, epoch=datetime(1970,1,1)):
+    td = dt - epoch
+    return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6 
 
 class SavingCycle ():
     datas = None
@@ -54,9 +59,9 @@ class DatasAggregate():
         self.costs = costs
         for cost in self.costs:
             cost['date'] = parse(cost['date'])
-            if cost['date'].timestamp() > self.endPeriodDate.timestamp():
+            if totimestamp(cost['date']) > totimestamp(self.endPeriodDate):
                 self.endPeriodDate = cost['date']
-        self.costs.sort(key= lambda cur : cur['date'].timestamp())
+        self.costs.sort(key= lambda cur : totimestamp(cur['date']))
 
         if events != None:
             self.events = events
@@ -67,7 +72,7 @@ class DatasAggregate():
 
     def setSavingCycles(self, savingCycles):
         self.savingCycles = savingCycles
-        self.savingCycles.sort(key= lambda cur : cur.startDate.timestamp())
+        self.savingCycles.sort(key= lambda cur : totimestamp(cur.startDate))
 
     # Création des event scopes (start date & endDate liés par un meme type d'event)
     def processEvents(self):
@@ -111,7 +116,7 @@ class DatasAggregate():
             unfinishedEvent = curScopes[scopeId]
             unfinishedEvent.endDate = self.endPeriodDate
             self.savingCycles.append(unfinishedEvent)
-        self.savingCycles.sort(key= lambda cur : cur.startDate.timestamp())
+        self.savingCycles.sort(key= lambda cur : totimestamp(cur.startDate))
 
     # sets self.sortedDatesWithCAU AND self.costUnitsByDate
     def mapCostsToSortedDatesWithCAU(self, costDataItems):
@@ -137,7 +142,7 @@ class DatasAggregate():
                 self.costUnitsByDate[curDate][costItem['CAU']] = {}
             self.costUnitsByDate[curDate][costItem['CAU']][costItem['tagGroup']] = costItem
 
-        self.sortedDatesWithCAU.sort(key= lambda cur : parse(cur['isodate']).timestamp())
+        self.sortedDatesWithCAU.sort(key= lambda cur : totimestamp(parse(cur['isodate'])))
         return self.sortedDatesWithCAU
 
     # sets self.savingCyclesByDate
@@ -145,11 +150,11 @@ class DatasAggregate():
         cyclesMap = {}
         for dateItem in sortedDateItems:
             isodate = dateItem['isodate']
-            ts = parse(dateItem['isodate']).timestamp()
+            ts = totimestamp(parse(dateItem['isodate']))
             cyclesMap[isodate] = {}
 
             for cycle in savingCycles:
-                if ts >= cycle.startDate.timestamp() and ts < cycle.endDate.timestamp() and cycle.activeCycle:
+                if ts >= totimestamp(cycle.startDate) and ts < totimestamp(cycle.endDate) and cycle.activeCycle:
                     if cycle.CAUId not in cyclesMap[isodate]:
                         cyclesMap[isodate][cycle.CAUId] = []
                     cyclesMap[isodate][cycle.CAUId].append(cycle)
@@ -186,7 +191,7 @@ class DatasAggregate():
             theoricalDateSavingCycles = self.getSavingCyclesAt(theoricalDate.isoformat(), CAUId)
             # Check if this date is inside any ended event at dateTime. If so, just call recursively on the event in question
             lastCycle = theoricalDateSavingCycles[-1] if len(theoricalDateSavingCycles) > 0 else False
-            if lastCycle is not False and lastCycle.endDate.timestamp() <= dateTime.timestamp():
+            if lastCycle is not False and totimestamp(lastCycle.endDate) <= totimestamp(dateTime):
                 curCycle.theoricalCosts[TagGroup] = self.getTheoriticalSpend_IfCostSavingActionHadNotBeenConducted(CAUId, TagGroup, lastCycle.startDate, lastCycle, len(theoricalDateSavingCycles) - 1)
                 return curCycle.theoricalCosts[TagGroup]
 

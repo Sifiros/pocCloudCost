@@ -1,5 +1,4 @@
-#!/usr/bin/python3
-
+# coding=utf8
 import sys
 import os
 import copy
@@ -50,10 +49,11 @@ class SavingCalculator():
 
     def getSavings(self):
         # sortie de la fonction getSavings : 
-        result = { "savings": [], "costs": [], "savingCycles": [], "eventNames": [] }
+        result = { "savings": [], "costs": [], "savingCycles": [], "eventNames": [], 'dates': [] }
 
         for dateTime in self.datas.sortedDatesWithCAU: # loop over each sorted dates
             isodate = dateTime['isodate']
+            result['dates'].append(isodate)
             for CAU in dateTime['costItemsCAU']: # every CAU containing cost items at this datetime
                 currentSavingCycles = self.datas.getSavingCyclesAt(isodate, CAU)
                 theoricalSavings = {} # theorical savings group by cycleId then tagGroup (theoricalSavings[cycleId][tagGroup] = int)

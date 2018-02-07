@@ -29,15 +29,15 @@
 <script>
 
     window.onload = function() {
+            var period = datas.period
             const eventTypes = datas.raw.eventNames
             var datasets = []
             const savings = datas.summarize.savings
             var savingDatas = eventTypes.reduce(function (result, cur) {
                 return Object.assign(result, { [cur]: [] })
             }, {})
-
             const costs = datas.summarize.costs
-            var costDatas = Object.keys(costs).map(function (date) {
+            var costDatas = datas.dates.map(function (date) {
                 // On ajoute les bénéfices pour chaque event & pour la même date
                 for (var type of eventTypes) {
                     if (date in savings && type in savings[date]) {

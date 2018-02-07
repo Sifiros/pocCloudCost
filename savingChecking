@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2.7
 
 ##
 ## Sum up saving results, look for inconsistencies
@@ -8,8 +8,13 @@
 from savingCalculator.DatasAggregate import DatasAggregate, SavingCycle
 import json
 from decimal import *
+from datetime import datetime
 from dateutil.parser import *
 import sys
+
+def totimestamp(dt, epoch=datetime(1970,1,1)):
+    td = dt - epoch
+    return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6 
 
 class SavingChecking():
     # DatasAggregate
@@ -153,9 +158,9 @@ class SavingChecking():
             "CAU": []
         }
         for cost in costs:
-            if (summary['start'] and cost['date'].timestamp() < summary['start'].timestamp()) or not summary['start']:
+            if (summary['start'] and totimestamp(cost['date']) < totimestamp(summary['start'])) or not summary['start']:
                 summary['start'] = cost['date']
-            if (summary['end'] and cost['date'].timestamp() > summary['end'].timestamp()) or not summary['end']:
+            if (summary['end'] and totimestamp(cost['date']) > totimestamp(summary['end'])) or not summary['end']:
                 summary['end'] = cost['date']
             summary['totalCost'] += cost['cost']
             allCAU.add(cost['CAU'])
