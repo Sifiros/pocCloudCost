@@ -13,9 +13,10 @@ class SavingCycle ():
     _id = 0
     activeCycle = True
 
-    def __init__(self, datas, startDate, eventType, CAUId, cycleId, activeCycle):
+    def __init__(self, datas, startDate, eventType, CAUId, cycleId, activeCycle, endDate = None):
         self.datas = datas
         self.startDate = startDate
+        self.endDate = endDate
         self.eventType = eventType
         self.CAUId = CAUId
         self._id = cycleId
@@ -172,7 +173,7 @@ class DatasAggregate():
             lastDate = (dateTime - timedelta(hours = 1)).isoformat()
             lastCycles = self.getSavingCyclesAt(lastDate, CAUId)
             # If current cycle's parent ended on last date ; synchronize cur theorical cost with those of ended cycle
-            if len(lastCycles) > (i + 1) and lastCycles[(i + 1)] == savingCycle:
+            if len(lastCycles) > (i + 1) and lastCycles[(i + 1)] == savingCycle and TagGroup in lastCycles[i].theoricalCosts:
                 savingCycle.theoricalCosts[TagGroup] = lastCycles[i].theoricalCosts[TagGroup]
             return savingCycle.theoricalCosts[TagGroup]
 

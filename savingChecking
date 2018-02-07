@@ -2,124 +2,178 @@
 
 ##
 ## Sum up saving results, look for inconsistencies
-## Needs "./cloudCost --json" as input (run ./cloudCost --json | ./savingChecking)
+## Needs "./calcSavings" as input (run ./calcSavings | ./savingChecking)
 ##
 
-from TeevityAPI import TeevityAPI
+from savingCalculator.DatasAggregate import DatasAggregate, SavingCycle
 import json
 from dateutil.parser import *
 import sys
 
-def getPeriod(costs):
-	period = {
-		"start": False,
-		"end": False,
-		"duration": False
-	}
-	for cost in costs:
-		date = parse(cost['date'])
-		if (period['start'] and date.timestamp() < period['start'].timestamp()) or not period['start']:
-			period['start'] = date
-		if (period['end'] and date.timestamp() > period['end'].timestamp()) or not period['end']:
-			period['end'] = date
-	period['duration'] = (period['end'] - period['start']).days
-	return period
+class SavingChecking():
+    # DatasAggregate
+    datas = None
+    savings = []
 
-def getDatesDict(period):
-	lastUnoptimized = {'costs': 0}
-	byDates = {}
-	for cur in period:
-		if cur['matchingEventTypes'] == False:
-			lastUnoptimized = cur
-			unoptimized = cur['cost']
-		else:
-			unoptimized = lastUnoptimized['cost']
-		byDates[cur['date']] = {
-			"unoptimized": unoptimized,
-			"cost": cur['cost'],
-			"hasEvent": cur['matchingEventTypes'],
-			"savings": {},
-			"totalSaving": 0
-		}
-	return byDates
+    def __init__(self, algoOutput):
+        self.savings = algoOutput['raw']['savings']
+        self.datas = DatasAggregate(algoOutput['raw']['costs'])
+        self.datas.setSavingCycles(list(map(lambda cur:
+            SavingCycle(self.datas, parse(cur['startDate']), cur['type'], cur['CAU'], cur['id'], True, parse(cur['endDate']))
+        , algoOutput['raw']['savingCycles'])))
+        self.datas.aggregate()
 
-def gatherDatas(costs, eventSavings):
-	dates = getDatesDict(costs)
-	summary = {
-		"costs": 0,
-		"savings": {},
-		"eventsApplyCounter": {},
-		"totalSaving": 0
-	}
+    def run(self):
+        summaryCosts = self.summarizeCosts(self.datas.costs)
+        summarySavings = self.summarizeSavings(self.savings)
 
-	for event in eventSavings:
-		date = event['date']
-		eventType = event['type']
-		# Filling cur date savings
-		dates[date]['savings'][eventType] = event['saving']
-		dates[date]['totalSaving'] += event['saving']
-		# Adding to summary
-		summary['costs'] += dates[date]['cost']
-		summary['totalSaving'] += event['saving']
-		if eventType not in summary['savings']:
-			summary['savings'][eventType] = event['saving']
-			summary['eventsApplyCounter'][eventType] = (1 if event['saving'] > 0 else 0)
-		else:
-			summary['savings'][eventType] += event['saving']
-			summary['eventsApplyCounter'][eventType] += (1 if event['saving'] > 0 else 0)
+        print(str(len(self.datas.costs)) +" cost metrics loaded between "+ summaryCosts['start'].strftime("%Y-%m-%d %H:%M") + 
+                " and  "+ summaryCosts['end'].strftime("%Y-%m-%d %H:%M") + " (" + str(summaryCosts['duration']) + " days) across " + str(len(summaryCosts['CAU'])) + " CAU : " + str(summaryCosts['CAU']))
+        print("Total real cost during this period : %d" % summaryCosts['totalCost'])
+        print("Total savings : %d (%.2f%% of costs across %d CAU : %s)" %
+            (summarySavings['total'], (summarySavings['total'] / summaryCosts['totalCost']) * 100,
+            len(summarySavings['CAU']), str(summarySavings['CAU']))
+        )
+        # Print saving by event type
+        for event in summarySavings['totalByEvent']:
+            print("\t%s = %d (%.2f%% of savings)" % (
+                event, summarySavings['totalByEvent'][event],
+                (summarySavings['totalByEvent'][event] / summarySavings['total']) * 100
+            ))
+        print("")
+        nbErrors = self.lookForInconsistencies(summarySavings)
+        if nbErrors == 0:
+            print("PASSED:\tEvery sum of real cost with saving is equal to corresponding unoptimized cost.")
+            print("> No inconsistency found !")
+        else:
+            print("\n\nFAILURE:\t%d (against %d datetimes) inconsistencies found." % (nbErrors, len(self.datas.sortedDatesWithCAU)))
+        return (0)
 
-	return {
-		"dates": dates,
-		"summary": summary
-	}
+    def checkItem(self, item, isodate):
+        pass
+        # print("{} : {} + {} = {} ".format(isodate, item['cost'], item['saving'], item['theoricalCost']))
 
-def lookForInconsistencies(dates):
-	nbErrors = 0
-	for date in dates:
-		cur = dates[date]
-		humanDate = parse(date).strftime("%Y-%m-%d %H:%M")
-		if not cur['hasEvent'] and cur['totalSaving'] > 0:
-			print("Cost metric on %s has %d savings without linked event !" % (humanDate, cur['totalSaving']))
-			nbErrors += 1
-		tot = cur['cost'] + cur['totalSaving']
-		if tot != cur['unoptimized']:
-			op = "lower" if tot < cur['unoptimized'] else "bigger"
-			print("On %s cost metric, sum of real cost and calculated saving (%d + %d = %d) is %s than unoptimized cost (%d) !" %
-				(humanDate, cur['cost'], cur['totalSaving'], tot, op, cur['unoptimized']))
-			nbErrors += 1
+    def lookForInconsistencies(self, summarySavings):
+        nbErrors = 0
+        results = {}
+        for item in self.datas.sortedDatesWithCAU:
+            isodate = item['isodate']
+            totalCost = 0.0
+            totalSaving = 0.0
+            totalTheoricalCost = 0.0
 
-	if nbErrors == 0:
-		print("PASSED:\tNo cost metric have saving without linked event.")
-		print("PASSED:\tEvery sum of real cost with saving is equal to corresponding unoptimized cost.")
-		print("> No inconsistency found !")
-	else:
-		print("\n\nFAILURE:\t%d (against %d metrics) inconsistencies found." % (nbErrors, len(dates)))
+            if isodate not in results:
+                results[isodate] = {}
+            savings = summarySavings['byDates'][isodate] if isodate in summarySavings['byDates'] else {}
+
+            for CAU in savings:
+                cur = results[isodate]
+                if CAU not in cur:
+                    cur[CAU] = {}
+                cur = cur[CAU]
+                for tagGroup in savings[CAU]:
+                    savingCycles = self.datas.savingCyclesByDate[isodate][CAU] if isodate in self.datas.savingCyclesByDate and CAU in self.datas.savingCyclesByDate[isodate] else []
+                    cost = self.datas.costUnitsByDate[isodate]
+                    cost = cost[CAU][tagGroup]['cost'] if CAU in cost and tagGroup in cost[CAU] else False
+                    curSaving = savings[CAU][tagGroup]
+                    # totalSaving += savings[CAU][tagGroup]
+                    if cost is False: # saving d'un ancien tag group
+                        # print("saving : " + str(curSaving))
+                        saving = {'theoricalCost': curSaving['saving'], 'cost': 0.00, 'saving': curSaving['saving']}
+                        totalTheoricalCost += float(curSaving['saving'])
+                        # totalCost += saving['saving']
+                    else:
+                        # print("cur theorical cost of cost " + str(cost) + " : " + str(savingCycles[curSaving['depth']].getTheoricalCost(tagGroup, parse(isodate))))
+                        saving = {'theoricalCost': savingCycles[curSaving['depth']].getTheoricalCost(tagGroup, parse(isodate)), 'cost': float(0) if curSaving['saving'] < 0.000 else float(cost) , 'saving': curSaving['saving']}
+                        totalTheoricalCost += float(saving['saving'] + saving['cost'])
+                        totalCost += saving['cost']
+
+                    cur[tagGroup] = saving
+                    self.checkItem(saving, isodate)
+                    totalSaving += saving['saving']
+
+            costs = self.datas.costUnitsByDate[isodate]
+            for CAU in costs:
+                cur = results[isodate]
+                if CAU not in cur:
+                    cur[CAU] = {}
+                cur = cur[CAU]
+                for tagGroup in costs[CAU]:
+                    if tagGroup not in cur:
+                        # print("no saving cycle")
+                        cur[tagGroup] = {'theoricalCost': costs[CAU][tagGroup]['cost'], 'cost': costs[CAU][tagGroup]['cost'], 'saving': 0}
+                        self.checkItem(cur[tagGroup], isodate)
+                        totalTheoricalCost += costs[CAU][tagGroup]['cost']
+                        totalCost += costs[CAU][tagGroup]['cost']
+                        # print("At {} : cost of {} without saving : {} ".format(isodate, tagGroup, costs[CAU][tagGroup]['cost']))
+
+            tot = round((totalSaving + totalCost), 2)
+            theoricalTot = round(totalTheoricalCost, 2)
+            if tot != theoricalTot:
+                op = "lower" if tot < theoricalTot else "bigger"
+                print("On %s, sum of real cost and calculated saving (%.2f + %.2f = %.2f) is %s than unoptimized cost (%2.f) !" %
+                    (isodate, totalCost, totalSaving, tot, op, theoricalTot))
+                nbErrors += 1
+        return nbErrors
+
+    def summarizeSavings(self, savings):
+        allCAU = set()
+        summary = {
+            'byDates': {},
+            'totalByEvent': {},
+            'total': 0,
+            'CAU': []
+        }
+
+        for saving in savings:
+            # Add curent date
+            if saving['date'] not in summary['byDates']:
+                summary['byDates'][saving['date']] = {}
+            # Add current CAU to current date
+            if saving['CAU'] not in summary['byDates'][saving['date']]:
+                summary['byDates'][saving['date']][saving['CAU']] = {}
+            if saving['tagGroup'] not in summary['byDates'][saving['date']][saving['CAU']]:
+                summary['byDates'][saving['date']][saving['CAU']][saving['tagGroup']] = saving
+            else: # saving already stored for this cau/taggroup = we're on another event
+                summary['byDates'][saving['date']][saving['CAU']][saving['tagGroup']]['saving'] += saving['saving']
+            # Add current event type to all events
+            if saving['type'] not in summary['totalByEvent']:
+                summary['totalByEvent'][saving['type']] = 0
+
+            summary['totalByEvent'][saving['type']] += saving['saving']
+            summary['total'] += saving['saving']
+            allCAU.add(saving['CAU'])
+
+        summary['CAU'] = list(allCAU)
+        return summary
+
+    def summarizeCosts(self, costs):
+        allCAU = set()
+        summary = {
+            "start": False,
+            "end": False,
+            "duration": False,
+            "totalCost": 0,
+            "CAU": []
+        }
+        for cost in costs:
+            if (summary['start'] and cost['date'].timestamp() < summary['start'].timestamp()) or not summary['start']:
+                summary['start'] = cost['date']
+            if (summary['end'] and cost['date'].timestamp() > summary['end'].timestamp()) or not summary['end']:
+                summary['end'] = cost['date']
+            summary['totalCost'] += cost['cost']
+            allCAU.add(cost['CAU'])
+        
+        summary['duration'] = (summary['end'] - summary['start']).days
+        summary['CAU'] = list(allCAU)
+        return summary
+
 
 def main():
-	datas = json.loads(sys.stdin.read())
-	events = datas['raw']['savings']
-	costs = datas['raw']['costs']
-	period = getPeriod(costs)
-	freq = round((len(costs) / (period['duration'] * 24)))
-	print(str(len(costs)) +" cost metrics loaded between "+ period['start'].strftime("%Y-%m-%d %H:%M") + 
-			" and  "+ period['end'].strftime("%Y-%m-%d %H:%M") +" ("+ str(period['duration']) +" days, "+ str(freq) +" metric/hour).")
-	
+    datas = json.loads(sys.stdin.read())
 
-	result = gatherDatas(costs, events)
-	print("Total real cost during this period : %d" % result['summary']['costs'])
-	print("Total savings : %d (%.2f%% of costs)" %
-		(result['summary']['totalSaving'], (result['summary']['totalSaving'] / result['summary']['costs']) * 100)
-	)
-	for cur in result['summary']['savings']:
-		print("\t%s = %d (%.2f%% of savings), applied on %d cost metrics, (%.2f%% of total)" % (
-			cur, result['summary']['savings'][cur],
-			(result['summary']['savings'][cur] / result['summary']['totalSaving']) * 100 if result['summary']['totalSaving'] > 0 else 0,
-			result['summary']['eventsApplyCounter'][cur],
-			(result['summary']['eventsApplyCounter'][cur] / len(costs)) * 100
-		))
-	print("")
-	lookForInconsistencies(result['dates'])
-	return (0)
+    savingChecking = SavingChecking(datas)
+    savingChecking.run()
 
 if __name__ == "__main__":
     sys.exit(main())

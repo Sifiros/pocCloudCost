@@ -18,7 +18,7 @@ mocks = {
 }
 
 def usage():
-    print("Usage : {} mockName\n".format(sys.argv[0]))
+    print("Usage : {} mockName [ --test ]\n".format(sys.argv[0]))
     sys.stdout.write("mockName can be : " + str(list(mocks.keys())))
     print()
 
@@ -26,14 +26,24 @@ def exec(files):
     cmd = "./calcSavings --costs-file {} --events-file {} --sum-by-hour --sum-by-cau --only-raw-fields eventNames -o ui/datas.json".format(files[0], files[1])
     return system(cmd)
 
-if len(sys.argv) < 2:
+def run_test(files):
+    cmd = "./calcSavings --costs-file {} --events-file {} | ./savingChecking".format(files[0], files[1])
+    return system(cmd)
+
+if len(sys.argv) < 2 or sys.argv[1] not in mocks:
     usage()
     exit(1)
+test = False
+if len(sys.argv) > 2:
+    if sys.argv[2] != '--test':
+        usage()
+        exit(1)
+    test = True
 
 option = sys.argv[1]
 files = mocks[option]
-if exec(files) == 0:
+if test is True:
+    run_test(files)
+elif exec(files) == 0:
     system("chromium ./ui/ui.html || firefox ./ui/ui.html || chrome ./ui/ui.html")
 exit(0)
-
-usage()
