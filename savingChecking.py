@@ -56,13 +56,9 @@ class SavingChecking():
             print("\n\nFAILURE:\t%d (against %d datetimes) inconsistencies found." % (nbErrors, len(self.datas.sortedDatesWithCAU)))
         return (nbErrors)
 
-    def checkItem(self, item, isodate):
-        pass
-        # print("{} : {} + {} = {} ".format(isodate, item['cost'], item['saving'], item['theoricalCost']))
-
     def lookForInconsistencies(self, summarySavings):
         nbErrors = 0
-        results = {}
+        theoricalCosts = {} # By cycle id then tagGroup
         getcontext().prec = 5
         for item in self.datas.sortedDatesWithCAU:
             isodate = item['isodate']
@@ -70,45 +66,34 @@ class SavingChecking():
             totalSaving = Decimal(0)
             totalTheoricalCost = Decimal(0)
 
-            if isodate not in results:
-                results[isodate] = {}
             savings = summarySavings['byDates'][isodate] if isodate in summarySavings['byDates'] else {}
 
+            costs = self.datas.costUnitsByDate[isodate]
+            for CAU in costs:
+                for tagGroup in costs[CAU]:
+                    savingCycles = self.datas.savingCyclesByDate[isodate][CAU] if isodate in self.datas.savingCyclesByDate and CAU in self.datas.savingCyclesByDate[isodate] else []
+                    if len(savingCycles) == 0:
+                        totalTheoricalCost += Decimal(costs[CAU][tagGroup]['cost'])
+                        theoricalCosts[tagGroup] = costs[CAU][tagGroup]['cost']            
+                    totalCost += Decimal(costs[CAU][tagGroup]['cost'])
+
             for CAU in savings:
-                cur = results[isodate]
-                if CAU not in cur:
-                    cur[CAU] = {}
-                cur = cur[CAU]
                 for tagGroup in savings[CAU]:
                     savingCycles = self.datas.savingCyclesByDate[isodate][CAU] if isodate in self.datas.savingCyclesByDate and CAU in self.datas.savingCyclesByDate[isodate] else []
                     cost = self.datas.costUnitsByDate[isodate]
                     cost = cost[CAU][tagGroup]['cost'] if CAU in cost and tagGroup in cost[CAU] else False
                     curSaving = savings[CAU][tagGroup]
+                    saving = 0
                     if cost is False: # saving d'un ancien tag group
-                        saving = {'theoricalCost': curSaving['saving'], 'cost': 0.00, 'saving': curSaving['saving']}
-                        totalTheoricalCost += Decimal(curSaving['saving'])
+                        saving = curSaving['saving']
+                        totalTheoricalCost += Decimal(saving)
                     else:
-                        saving = {'theoricalCost': savingCycles[curSaving['depth']].getTheoricalCost(tagGroup, parse(isodate)), 'cost': 0 if curSaving['saving'] < 0.000 else cost, 'saving': curSaving['saving']}
-                        totalTheoricalCost += Decimal(saving['saving'] + saving['cost'])
-                        totalCost += Decimal(saving['cost'])
+                        saving = curSaving['saving']
+                        totalTheoricalCost += Decimal(theoricalCosts[tagGroup] if tagGroup in theoricalCosts else 0)
 
-                    cur[tagGroup] = saving
-                    self.checkItem(saving, isodate)
-                    totalSaving += Decimal(saving['saving'])
+                    totalSaving += Decimal(saving)
 
-            costs = self.datas.costUnitsByDate[isodate]
-            for CAU in costs:
-                cur = results[isodate]
-                if CAU not in cur:
-                    cur[CAU] = {}
-                cur = cur[CAU]
-                for tagGroup in costs[CAU]:
-                    if tagGroup not in cur:
-                        cur[tagGroup] = {'theoricalCost': costs[CAU][tagGroup]['cost'], 'cost': costs[CAU][tagGroup]['cost'], 'saving': 0}
-                        self.checkItem(cur[tagGroup], isodate)
-                        totalTheoricalCost += Decimal(costs[CAU][tagGroup]['cost'])
-                        totalCost += Decimal(costs[CAU][tagGroup]['cost'])
-
+            # Last step : check sums
             tot = totalSaving + totalCost
             theoricalTot = totalTheoricalCost
             if tot != theoricalTot:
