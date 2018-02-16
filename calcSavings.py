@@ -74,19 +74,24 @@ def apply_filters(datas, filters):
         return merge_rows(datas, filters['merge_by'])
     return datas
 
-def run(args, filters):
-    # filters preset
-    if args['sum_by_hour'] is True:
-        if filters is False:
-            filters = {}
-        filters['savings'] = {'group_by': ['date', 'type'], 'merge_by': ['saving', 'depth']}
-        filters['costs'] = {'group_by': ['date'], 'merge_by': ['cost', 'saving']}
-    if args['sum_by_cau'] is True:
-        if filters is False:
-            filters = {}
-        filters['savingCycles'] = {'group_by': ['type', 'CAU']}
+def run(args, filters=False):
+    if 'costs_filepath' not in args or 'events_filepath' not in args:
+        args['costs_filepath'] = "./dataMocks/csv/generated_costs.csv"
+        args['events_filepath'] = "./dataMocks/csv/generated_events.csv"
 
-    api = TeevityAPI(args['costsFilepath'], args['eventsFilepath'])
+    # filters preset
+    if 'filters_preset' in args:
+        if 'sum_by_hour' in args['filters_preset']:
+            if filters is False:
+                filters = {}
+            filters['savings'] = {'group_by': ['date', 'type'], 'merge_by': ['saving', 'depth']}
+            filters['costs'] = {'group_by': ['date'], 'merge_by': ['cost', 'saving']}
+        if 'sum_by_cau' in args['filters_preset']:
+            if filters is False:
+                filters = {}
+            filters['savingCycles'] = {'group_by': ['type', 'CAU']}
+
+    api = TeevityAPI(args['costs_filepath'], args['events_filepath'])
     calculator = SavingCalculator(api.GetCostDatas(), api.GetEvents())
     out = {}
     try:
@@ -107,15 +112,15 @@ def run(args, filters):
         out['summarize'] = {}
         for field in filters:
             out['summarize'][field] = apply_filters(raw[field], filters[field])
-    if args['no_raw_fields'] is False:
+    if 'no_raw_fields' not in args or args['no_raw_fields'] is False:
         out['raw'] = raw
-        if args['only_raw_fields'] is not None:
+        if 'only_raw_fields' in args and args['only_raw_fields'] is not None:
             only_fields = args['only_raw_fields'].split(',')
             skip = list(filter(lambda k: k not in only_fields, raw.keys()))
             for k in skip:
                 raw.pop(k)
 
-    if args['output_file'] is None:
+    if 'output_file' not in args or args['output_file'] is None:
         print(json.dumps(out))
     else:
         calculator.storeToFile(out, args['output_file'])
@@ -154,16 +159,18 @@ def main():
         sys.stderr.write("--costs-file and --events-file options MUST be used together.\n")
         return 
 
-    costsFilepath = args.costs_file if args.costs_file is not None else "./dataMocks/csv/generated_costs.csv"
-    eventsFilepath = args.events_file if args.events_file is not None else "./dataMocks/csv/generated_events.csv"
+    filters_preset = []
+    if args.sum_by_cau:
+        filters_preset.append('sum_by_cau')
+    if args.sum_by_hour:
+        filters_preset.append('sum_by_hour')
     return run({
-        'costsFilepath': costsFilepath,
-        'eventsFilepath': eventsFilepath,
+        'costs_filepath': args.costs_file,
+        'events_filepath': args.events_file,
         'no_raw_fields': args.no_raw_fields,
         'only_raw_fields': args.only_raw_fields,
         'output_file': args.output_file,
-        'sum_by_hour': args.sum_by_hour,
-        'sum_by_cau': args.sum_by_cau
+        'filters_preset': filters_preset
     }, filters)
 
 if __name__ == "__main__":

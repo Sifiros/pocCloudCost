@@ -3,6 +3,7 @@
 import sys
 from os import system
 import argparse
+from calcSavings import run
 
 CSV_PATH = './dataMocks/csv/'
 mocks = {
@@ -19,15 +20,20 @@ mocks = {
 }
 
 def run_calc(files):
-    cmd = "./calcSavings --costs-file {} --events-file {} --sum-by-hour --sum-by-cau --only-raw-fields eventNames -o ui/datas.json".format(files[0], files[1])
-    return system(cmd)
+    return run({
+        'costs_filepath': files[0],
+        'events_filepath': files[1],
+        'output_file': 'ui/datas.json',
+        'only_raw_fields': 'eventNames',
+        'filters_preset': ['sum_by_hour', 'sum_by_cau']
+    })
 
 def run_test(files):
-    cmd = "./calcSavings --costs-file {} --events-file {} | ./savingChecking.py".format(files[0], files[1])
+    cmd = "./calcSavings.py --costs-file {} --events-file {} | ./savingChecking.py".format(files[0], files[1])
     return system(cmd)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Easy interface to ./calcSavings usage.\nMocks: " + str(list(mocks.keys())) + "\n")
+    parser = argparse.ArgumentParser("Easy interface to ./calcSavings.py usage.\nMocks: " + str(list(mocks.keys())) + "\n")
     parser.add_argument("mock", metavar="MOCK", type=str, nargs=1, help="Indicate a mock to be tested")
     parser.add_argument("--test", "-t", action="store_true", help="Only run test for specified mock")
 
