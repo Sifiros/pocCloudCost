@@ -74,51 +74,19 @@ def apply_filters(datas, filters):
         return merge_rows(datas, filters['merge_by'])
     return datas
 
-def main():
-    parser = argparse.ArgumentParser(
-        "Provided cloud cost & event datas, compute then output in 3 fields of json 'raw' result : savings, savingCycles, costs, eventNames. \n "
-        "GROUP_BY and MERGE_BY options need to start by one of these 3 fields followed by ':' in order to filter on the right field. \n "
-        "ex: ./calcSavings --group-by=savings:date,type --merge-by=savings:saving,depth \t #Group savings by unique date then event type, before merging all of their saving in one row\n")
-    parser.add_argument("--group-by", type=str, action="append", help="Group saving datas by some columns of given fieldname. Output result in 'summarize'")
-    parser.add_argument("--merge-by", type=str, action="append", help="Merge saving datas by some columns of given fieldname. Output result in 'summarize'")
-    parser.add_argument("--no-raw-fields", action="store_true", help="Disable output of whole datas set computed by the algorithm in 'raw' field.")
-    parser.add_argument("--only-raw-fields", type=str, help="Output only raw fields indicated by this option")
-    parser.add_argument("--sum-by-hour", action="store_true", help="Same as --group-by=savings:date,type --merge-by=savings:saving,depth --group-by=costs:date --merge-by=costs:cost,saving")
-    parser.add_argument("--sum-by-cau", action="store_true", help="Same as --group-by=savingCycles:type,cau")
-    parser.add_argument("--costs-file", help="Path of input cost datas file. Must be used with --events-file")
-    parser.add_argument("--events-file", help="Path of input cost datas file. Must be used with --costs-file")
-    parser.add_argument("-o", "--output-file", help="Path of outputfile. 'datas = ' is appended on file beginning")
-
-    args = parser.parse_args()    
-    filters = {} if args.group_by != None or args.merge_by != None else False
-    if args.sum_by_hour is True:
+def run(args, filters):
+    # filters preset
+    if args['sum_by_hour'] is True:
         if filters is False:
             filters = {}
         filters['savings'] = {'group_by': ['date', 'type'], 'merge_by': ['saving', 'depth']}
         filters['costs'] = {'group_by': ['date'], 'merge_by': ['cost', 'saving']}
-    if args.sum_by_cau:
+    if args['sum_by_cau'] is True:
         if filters is False:
             filters = {}
         filters['savingCycles'] = {'group_by': ['type', 'CAU']}
 
-    if args.group_by != None:
-        if parse_filter_opt(args.group_by, 'group_by', filters) is False:
-            sys.stderr.write("Please specify relevant fieldname with --group-by\n")
-            parser.print_help() 
-            return
-    if args.merge_by != None:
-        if parse_filter_opt(args.merge_by, 'merge_by', filters) is False:
-            sys.stderr.write("Please specify relevant fieldname with --merge-by\n")
-            parser.print_help() 
-            return
-
-    if (args.costs_file and not args.events_file) or (args.events_file and not args.costs_file):
-        sys.stderr.write("--costs-file and --events-file options MUST be used together.\n")
-        return 
-    costsFilepath = args.costs_file if args.costs_file is not None else "./dataMocks/csv/generated_costs.csv"
-    eventsFilepath = args.events_file if args.events_file is not None else "./dataMocks/csv/generated_events.csv"
-
-    api = TeevityAPI(costsFilepath, eventsFilepath)
+    api = TeevityAPI(args['costsFilepath'], args['eventsFilepath'])
     calculator = SavingCalculator(api.GetCostDatas(), api.GetEvents())
     out = {}
     try:
@@ -139,19 +107,64 @@ def main():
         out['summarize'] = {}
         for field in filters:
             out['summarize'][field] = apply_filters(raw[field], filters[field])
-    if args.no_raw_fields is False:
+    if args['no_raw_fields'] is False:
         out['raw'] = raw
-        if args.only_raw_fields is not None:
-            only_fields = args.only_raw_fields.split(',')
+        if args['only_raw_fields'] is not None:
+            only_fields = args['only_raw_fields'].split(',')
             skip = list(filter(lambda k: k not in only_fields, raw.keys()))
             for k in skip:
                 raw.pop(k)
 
-    if args.output_file is None:
+    if args['output_file'] is None:
         print(json.dumps(out))
     else:
-        calculator.storeToFile(out, args.output_file)
-    return (0)
+        calculator.storeToFile(out, args['output_file'])
+    return 0
+
+def main():
+    parser = argparse.ArgumentParser(
+        "Provided cloud cost & event datas, compute then output in 3 fields of json 'raw' result : savings, savingCycles, costs, eventNames. \n "
+        "GROUP_BY and MERGE_BY options need to start by one of these 3 fields followed by ':' in order to filter on the right field. \n "
+        "ex: ./calcSavings --group-by=savings:date,type --merge-by=savings:saving,depth \t #Group savings by unique date then event type, before merging all of their saving in one row\n")
+    parser.add_argument("--group-by", type=str, action="append", help="Group saving datas by some columns of given fieldname. Output result in 'summarize'")
+    parser.add_argument("--merge-by", type=str, action="append", help="Merge saving datas by some columns of given fieldname. Output result in 'summarize'")
+    parser.add_argument("--no-raw-fields", action="store_true", help="Disable output of whole datas set computed by the algorithm in 'raw' field.")
+    parser.add_argument("--only-raw-fields", type=str, help="Output only raw fields indicated by this option")
+    parser.add_argument("--sum-by-hour", action="store_true", help="Same as --group-by=savings:date,type --merge-by=savings:saving,depth --group-by=costs:date --merge-by=costs:cost,saving")
+    parser.add_argument("--sum-by-cau", action="store_true", help="Same as --group-by=savingCycles:type,cau")
+    parser.add_argument("--costs-file", help="Path of input cost datas file. Must be used with --events-file")
+    parser.add_argument("--events-file", help="Path of input cost datas file. Must be used with --costs-file")
+    parser.add_argument("-o", "--output-file", help="Path of outputfile. 'datas = ' is appended on file beginning")
+
+    args = parser.parse_args()    
+    filters = {} if args.group_by != None or args.merge_by != None else False
+
+    if args.group_by != None:
+        if parse_filter_opt(args.group_by, 'group_by', filters) is False:
+            sys.stderr.write("Please specify relevant fieldname with --group-by\n")
+            parser.print_help() 
+            return
+    if args.merge_by != None:
+        if parse_filter_opt(args.merge_by, 'merge_by', filters) is False:
+            sys.stderr.write("Please specify relevant fieldname with --merge-by\n")
+            parser.print_help() 
+            return
+
+    if (args.costs_file and not args.events_file) or (args.events_file and not args.costs_file):
+        sys.stderr.write("--costs-file and --events-file options MUST be used together.\n")
+        return 
+
+    costsFilepath = args.costs_file if args.costs_file is not None else "./dataMocks/csv/generated_costs.csv"
+    eventsFilepath = args.events_file if args.events_file is not None else "./dataMocks/csv/generated_events.csv"
+    return run({
+        'costsFilepath': costsFilepath,
+        'eventsFilepath': eventsFilepath,
+        'no_raw_fields': args.no_raw_fields,
+        'only_raw_fields': args.only_raw_fields,
+        'output_file': args.output_file,
+        'sum_by_hour': args.sum_by_hour,
+        'sum_by_cau': args.sum_by_cau
+    }, filters)
 
 if __name__ == "__main__":
     sys.exit(main())
