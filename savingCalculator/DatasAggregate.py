@@ -56,6 +56,10 @@ class DatasAggregate():
 
     # Can be called from calculator with json read from csv OR from unit tests with calculator output
     def __init__(self, costs, events=None):
+        self.savingCycles = []
+        self.sortedDatesWithCAU = []
+        self.costUnitsByDate = False
+        self.savingCyclesByDate = False 
         self.costs = costs
         for cost in self.costs:
             cost['date'] = parse(cost['date'])
