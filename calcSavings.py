@@ -5,7 +5,6 @@ from savingCalculator.SavingCalculator import SavingCalculator
 from dateutil.parser import *
 from datetime import *
 import json
-import pandas as pd
 import sys
 import argparse
 
@@ -35,36 +34,35 @@ def merge_rows(datas, mergeBy):
     return first
 
 def group_rows(datas, groupBy, mergeBy):
-    data = pd.DataFrame(datas)
+    lastGroupLvls = []
     result = {}
-    data = data.groupby(groupBy)
-    groupSizes = data.size().to_dict()
+    for row in datas:
+        cur = result
+        groupByLen = len(groupBy)
+        i = 0
+        while i < (groupByLen - 1):
+            keyValue = row[groupBy[i]]
+            if keyValue not in cur:
+                cur[keyValue] = {}
+                # Last level for this new group : store it  
+                if (i + 1) == (groupByLen - 1):
+                    lastGroupLvls.append(cur[keyValue])                
+            cur = cur[keyValue]
+            i += 1
+        lastKey = row[groupBy[i]]
+        if lastKey not in cur:
+            cur[lastKey] = []
+        # cur[lastKey] is now the list containing all rows of same group than current row
+        cur[lastKey].append(row)
 
-    for group, df in data: # group : tuple / df : dataframe
-        nbRows = groupSizes[group]
-        lvl = result
-        lastkey = '' # group last key which will store datas 
-        if isinstance(group, tuple): # not a tuple if 1 value
-            for idx, key in enumerate(group):
-                if key not in lvl and idx < (len(group) - 1):
-                    lvl[key] = {}
-                if idx == (len(group) - 1):
-                    lastkey = key
-                else:
-                    lvl = lvl[key]
-        else:
-            lastkey = group
+    if len(groupBy) == 1:
+        lastGroupLvls = [result]
+    if mergeBy is not None and len(mergeBy) > 0:
+        for curLastLvl in lastGroupLvls:
+            for grpKey in curLastLvl:
+                merged = merge_rows(curLastLvl[grpKey], mergeBy)
+                curLastLvl[grpKey] = merged
 
-        rows = [{} for _ in range(nbRows)]
-        dfDict = dict(df)
-        for field in df: # each field name
-            i = 0
-            for val in dfDict[field]: # each value for this field
-                rows[i][field] = val
-                i += 1
-        if mergeBy is not None:
-            rows = merge_rows(rows, mergeBy)
-        lvl[lastkey] = rows
     return result
 
 def apply_filters(datas, filters):
